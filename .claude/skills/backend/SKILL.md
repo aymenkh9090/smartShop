@@ -19,6 +19,17 @@ description: Regles pour coder dans backend/ (Spring Boot 4, Java 21) - nouvelle
 - Mouvements de stock, paiements, statuts SAV : toujours historises, jamais une simple mise a jour de champ.
 - Config : `application.yml` + profils ; tout secret via `${VARIABLE}` sans valeur par defaut.
 - Spring Boot 4 : starters modulaires (`spring-boot-starter-webmvc`, ...), Jackson 3 (`tools.jackson.*`).
+- **Jackson 3 : jamais de primitif (`boolean`, `int`) dans un Request DTO.** Un champ absent fait echouer toute la desérialisation (400 "corps illisible"). Utiliser `Boolean`/`Integer` + `@NotNull`.
+- `@Pattern` s'applique AVANT le trim du mapper : tolerer les espaces autour (`^\\s*...\\s*$`).
+- Spring Data 4 : `PropertyReferenceException` est dans `org.springframework.data.core`.
+
+## Patterns etablis (phase 3)
+- Mappers : `@Mapper(config = MapStructConfig.class)` (componentModel spring, champ cible oublie = erreur de compilation). `TextNormalizer` trim automatiquement toutes les chaines ; `qualifiedByName = "upper" | "lower" | "phone"` pour le reste.
+- Unicite : `existsByX` (creation) / `existsByXAndIdNot` (modification) -> `BusinessException` (409). La contrainte SQL reste le filet de securite.
+- **Piege auto-flush** : en modification, faire les controles (requetes `existsBy...`) AVANT de modifier l'entite managee (mapper `update`, setters). Sinon Hibernate flushe la modification avant la requete et la contrainte SQL repond a la place du controle metier. Normaliser les valeurs a controler avec `TextNormalizer`.
+- Listes : `XxxFilter` record (query params) + `XxxSpecifications.matching(filter)` + `SearchPatterns` (echappe `%`/`_`) + `PageResponse.from(page)` ; `@EntityGraph` sur `findAll(spec, pageable)` si relation affichee.
+- Pas de suppression des entites referencees par l'historique : `PATCH /{id}/status` avec `StatusUpdateRequest`.
+- `POST` -> `201` + header `Location`. Tests d'integration : etendre `AbstractIntegrationTest` (`tokenFor(Role)`, `getAs/postAs/...`).
 
 ## Commandes
 - `./mvnw test` (Docker requis pour Testcontainers), `./mvnw verify` (+ rapport JaCoCo `target/site/jacoco`).

@@ -1,24 +1,25 @@
 <section class="login">
+  <h1>SmartShop</h1>
   <h2>Connexion</h2>
 
   <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-    <label for="username">Nom d'utilisateur ou email</label>
-    <input id="username" type="text" formControlName="username" autocomplete="username" />
-    @if (form.controls.username.touched && form.controls.username.invalid) {
-      <small class="field-error">Champ obligatoire.</small>
-    }
+    <mat-form-field>
+      <mat-label>Nom d'utilisateur ou email</mat-label>
+      <input matInput id="username" formControlName="username" autocomplete="username" />
+      <mat-error>{{ errorOf(form.controls.username) }}</mat-error>
+    </mat-form-field>
 
-    <label for="password">Mot de passe</label>
-    <input id="password" type="password" formControlName="password" autocomplete="current-password" />
-    @if (form.controls.password.touched && form.controls.password.invalid) {
-      <small class="field-error">Champ obligatoire.</small>
-    }
+    <mat-form-field>
+      <mat-label>Mot de passe</mat-label>
+      <input matInput id="password" type="password" formControlName="password" autocomplete="current-password" />
+      <mat-error>{{ errorOf(form.controls.password) }}</mat-error>
+    </mat-form-field>
 
     @if (errorMessage(); as message) {
       <p class="form-error" role="alert">{{ message }}</p>
     }
 
-    <button type="submit" [disabled]="submitting()">
+    <button mat-flat-button type="submit" [disabled]="submitting()">
       {{ submitting() ? 'Connexion...' : 'Se connecter' }}
     </button>
   </form>

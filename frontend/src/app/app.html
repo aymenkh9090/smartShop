@@ -1,12 +1,31 @@
-<header class="app-header">
-  <h1>{{ appName }}</h1>
-  @if (auth.currentUser(); as user) {
-    <div class="user-menu">
-      <span>{{ user.firstName }} {{ user.lastName }} ({{ user.role }})</span>
-      <button type="button" (click)="auth.logout()">Deconnexion</button>
-    </div>
-  }
-</header>
-<main class="app-content">
+@if (auth.currentUser(); as user) {
+  <mat-toolbar class="app-toolbar">
+    <span class="app-name">{{ appName }}</span>
+    <span class="spacer"></span>
+    <span class="user-name">{{ user.firstName }} {{ user.lastName }} ({{ user.role }})</span>
+    <button mat-button type="button" (click)="auth.logout()">
+      <mat-icon>logout</mat-icon>
+      Deconnexion
+    </button>
+  </mat-toolbar>
+
+  <mat-sidenav-container class="app-container">
+    <mat-sidenav mode="side" opened class="app-sidenav">
+      <mat-nav-list>
+        @for (item of navItems(); track item.path) {
+          <a mat-list-item [routerLink]="item.path" routerLinkActive #rla="routerLinkActive" [activated]="rla.isActive">
+            <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+            <span matListItemTitle>{{ item.label }}</span>
+          </a>
+        }
+      </mat-nav-list>
+    </mat-sidenav>
+    <mat-sidenav-content>
+      <main class="app-content">
+        <router-outlet />
+      </main>
+    </mat-sidenav-content>
+  </mat-sidenav-container>
+} @else {
   <router-outlet />
-</main>
+}

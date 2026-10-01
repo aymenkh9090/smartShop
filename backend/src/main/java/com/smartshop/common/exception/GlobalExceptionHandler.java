@@ -7,6 +7,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
+import org.springframework.data.core.PropertyReferenceException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AccountStatusException;
@@ -51,6 +53,20 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     ResponseEntity<ApiError> handleTypeMismatch(MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
         return build(HttpStatus.BAD_REQUEST, "Parametre invalide : " + ex.getName(), request, List.of());
+    }
+
+    /** Tri sur une propriete inconnue (?sort=xxx), eventuellement enveloppe par la traduction d'exceptions JPA. */
+    @ExceptionHandler(PropertyReferenceException.class)
+    ResponseEntity<ApiError> handleInvalidSort(PropertyReferenceException ex, HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, "Critere de tri invalide : " + ex.getPropertyName(), request, List.of());
+    }
+
+    @ExceptionHandler(InvalidDataAccessApiUsageException.class)
+    ResponseEntity<ApiError> handleInvalidDataAccess(InvalidDataAccessApiUsageException ex, HttpServletRequest request) {
+        if (ex.getCause() instanceof PropertyReferenceException cause) {
+            return handleInvalidSort(cause, request);
+        }
+        return handleOther(ex, request);
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)

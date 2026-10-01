@@ -1,0 +1,47 @@
+<div class="page-header">
+  <h2>{{ isEdit() ? 'Modifier le client' : 'Nouveau client' }}</h2>
+</div>
+
+<form class="form-card" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  <div class="form-grid">
+    <mat-form-field>
+      <mat-label>Nom</mat-label>
+      <input matInput formControlName="lastName" />
+      <mat-error>{{ errorOf(form.controls.lastName) }}</mat-error>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Prenom</mat-label>
+      <input matInput formControlName="firstName" />
+      <mat-error>{{ errorOf(form.controls.firstName) }}</mat-error>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Telephone</mat-label>
+      <input matInput formControlName="phone" />
+      <mat-error>{{ errorOf(form.controls.phone) }}</mat-error>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Email</mat-label>
+      <input matInput formControlName="email" />
+      <mat-error>{{ errorOf(form.controls.email) }}</mat-error>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>CIN</mat-label>
+      <input matInput formControlName="cin" />
+      <mat-error>{{ errorOf(form.controls.cin) }}</mat-error>
+    </mat-form-field>
+    <mat-form-field class="full-width">
+      <mat-label>Adresse</mat-label>
+      <input matInput formControlName="address" />
+      <mat-error>{{ errorOf(form.controls.address) }}</mat-error>
+    </mat-form-field>
+    <mat-form-field class="full-width">
+      <mat-label>Notes</mat-label>
+      <textarea matInput formControlName="notes" rows="3"></textarea>
+      <mat-error>{{ errorOf(form.controls.notes) }}</mat-error>
+    </mat-form-field>
+  </div>
+  <div class="form-actions">
+    <a mat-button routerLink="/customers">Annuler</a>
+    <button mat-flat-button type="submit" [disabled]="submitting()">Enregistrer</button>
+  </div>
+</form>

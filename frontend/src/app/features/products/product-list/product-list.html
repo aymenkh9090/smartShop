@@ -1,0 +1,109 @@
+<div class="page-header">
+  <h2>Produits</h2>
+  @if (canManage()) {
+    <a mat-flat-button routerLink="new"><mat-icon>add</mat-icon> Nouveau produit</a>
+  }
+</div>
+
+<form class="filters" [formGroup]="filters">
+  <mat-form-field class="search">
+    <mat-label>Rechercher</mat-label>
+    <input matInput formControlName="q" placeholder="Nom, SKU, code-barres, marque, modele..." />
+    <mat-icon matSuffix>search</mat-icon>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>Categorie</mat-label>
+    <mat-select formControlName="categoryId">
+      <mat-option [value]="null">Toutes</mat-option>
+      @for (category of categories(); track category.id) {
+        <mat-option [value]="category.id">{{ category.name }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>Type</mat-label>
+    <mat-select formControlName="type">
+      <mat-option [value]="null">Tous</mat-option>
+      @for (type of types; track type) {
+        <mat-option [value]="type">{{ typeLabels[type] }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>Statut</mat-label>
+    <mat-select formControlName="active">
+      <mat-option value="true">Actifs</mat-option>
+      <mat-option value="false">Inactifs</mat-option>
+      <mat-option value="">Tous</mat-option>
+    </mat-select>
+  </mat-form-field>
+</form>
+
+@if (loading()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+<div class="table-container">
+  <table mat-table [dataSource]="page().content" matSort matSortActive="name" matSortDirection="asc"
+         (matSortChange)="onSort($event)">
+    <ng-container matColumnDef="sku">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>SKU</th>
+      <td mat-cell *matCellDef="let p">{{ p.sku }}</td>
+    </ng-container>
+    <ng-container matColumnDef="name">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Nom</th>
+      <td mat-cell *matCellDef="let p">
+        {{ p.name }}
+        @if (p.brand) {
+          <div class="mat-caption">{{ p.brand }} {{ p.model }}</div>
+        }
+      </td>
+    </ng-container>
+    <ng-container matColumnDef="category">
+      <th mat-header-cell *matHeaderCellDef>Categorie</th>
+      <td mat-cell *matCellDef="let p">{{ p.category.name }}</td>
+    </ng-container>
+    <ng-container matColumnDef="type">
+      <th mat-header-cell *matHeaderCellDef>Type</th>
+      <td mat-cell *matCellDef="let p">{{ typeLabel(p.type) }}</td>
+    </ng-container>
+    <ng-container matColumnDef="salePrice">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Prix de vente</th>
+      <td mat-cell *matCellDef="let p">{{ p.salePrice | currency: 'TND' : 'symbol' : '1.3-3' }}</td>
+    </ng-container>
+    <ng-container matColumnDef="quantity">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Stock</th>
+      <td mat-cell *matCellDef="let p">
+        {{ p.quantity }}
+        @if (p.lowStock) {
+          <span class="badge warn" matTooltip="Stock inferieur ou egal au seuil ({{ p.minStock }})">Stock faible</span>
+        }
+      </td>
+    </ng-container>
+    <ng-container matColumnDef="status">
+      <th mat-header-cell *matHeaderCellDef>Statut</th>
+      <td mat-cell *matCellDef="let p">
+        <span class="badge" [class.muted]="!p.active">{{ p.active ? 'Actif' : 'Inactif' }}</span>
+      </td>
+    </ng-container>
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef></th>
+      <td mat-cell *matCellDef="let p" class="actions-cell">
+        <a mat-icon-button [routerLink]="[p.id, 'edit']" matTooltip="Modifier" aria-label="Modifier">
+          <mat-icon>edit</mat-icon>
+        </a>
+        <button mat-icon-button type="button" (click)="toggleStatus(p)"
+                [matTooltip]="p.active ? 'Desactiver' : 'Reactiver'" [attr.aria-label]="p.active ? 'Desactiver' : 'Reactiver'">
+          <mat-icon>{{ p.active ? 'block' : 'check_circle' }}</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="columns()"></tr>
+    <tr mat-row *matRowDef="let row; columns: columns()"></tr>
+    <tr class="mat-mdc-row" *matNoDataRow>
+      <td class="no-data" [attr.colspan]="columns().length">Aucun produit trouve.</td>
+    </tr>
+  </table>
+  <mat-paginator [length]="page().totalElements" [pageIndex]="query().page" [pageSize]="query().size"
+                 [pageSizeOptions]="[10, 20, 50, 100]" (page)="onPage($event)" />
+</div>

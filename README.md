@@ -4,7 +4,7 @@ Application web de gestion pour une boutique de smartphones, récepteurs, abonne
 
 Elle centralise : stock, ventes, achats, clients, fournisseurs, crédits clients et fournisseurs, service après-vente (SAV) et tableau de bord.
 
-> État actuel : **Phase 2 – sécurité** terminée (utilisateurs, rôles, JWT, refresh tokens, login Angular). Voir `CLAUDE.md` pour la feuille de route.
+> État actuel : **Phase 3 – référentiel** terminée (catégories, produits, clients, fournisseurs, écrans Angular Material). Voir `CLAUDE.md` pour la feuille de route.
 
 ## Architecture
 
@@ -37,7 +37,7 @@ Angular 20  --HTTP/JSON-->  Spring Boot REST API (JWT)  -->  JPA/Hibernate  --> 
 |---|---|
 | Backend | Java 21, Spring Boot 4.1, Spring Web MVC, Spring Data JPA / Hibernate, Spring Security, JWT (OAuth2 Resource Server / Nimbus), Bean Validation, Lombok, Flyway, Maven |
 | Tests backend | JUnit 5, Mockito, Spring Boot Test, Testcontainers (PostgreSQL), JaCoCo |
-| Frontend | Angular 20 (standalone), TypeScript, Router, HttpClient, Reactive Forms, RxJS, Signals |
+| Frontend | Angular 20 (standalone), Angular Material 20, TypeScript, Router, HttpClient, Reactive Forms, RxJS, Signals |
 | Base de données | PostgreSQL 17 |
 | Infra | Docker, Docker Compose |
 
@@ -153,6 +153,27 @@ Matrice cible (appliquée avec `@PreAuthorize` au fil des phases) :
 | Crédits fournisseurs | ✅ | ✅ | — | — |
 | SAV | ✅ | ✅ | création de tickets | ✅ diagnostic, réparation, statuts |
 | Tableau de bord | ✅ complet | ✅ complet | ventes du jour | SAV |
+
+## Référentiel (phase 3)
+
+| Ressource | Lecture | Écriture | Activer / désactiver |
+|---|---|---|---|
+| `/api/categories` | authentifié | MANAGER (`DELETE` refusé si des produits l'utilisent) | — |
+| `/api/products` | authentifié | MANAGER | `PATCH /{id}/status` MANAGER |
+| `/api/customers` | authentifié | SELLER | `PATCH /{id}/status` MANAGER |
+| `/api/suppliers` | MANAGER | MANAGER | `PATCH /{id}/status` MANAGER |
+
+- **Listes paginées** : `?page=0&size=20&sort=name,asc` (taille maximale 100), réponse `{content, page, size, totalElements, totalPages}`.
+- **Filtres** : `q` (recherche « contient », insensible à la casse) et `active=true|false`. Pour les produits, également `categoryId` et `type`.
+- **Pas de suppression** des produits, clients et fournisseurs : ils sont désactivés, car les ventes, achats et crédits les référenceront.
+- **Quantité en stock** : en lecture seule. Elle vaut 0 à la création et ne change que par les mouvements de stock (phase 4). Un champ `quantity` envoyé dans une requête est ignoré.
+- **Normalisation** :
+  - SKU, code-barres, CIN et matricule fiscal en majuscules ;
+  - emails en minuscules ;
+  - téléphones sans espaces (`+216 22 333 444` → `+21622333444`) ;
+  - champs texte vides → `null`.
+- **Unicité** : SKU, code-barres, téléphone et CIN client, nom de catégorie, raison sociale et matricule fiscal fournisseur (sans tenir compte de la casse pour les noms). Un doublon renvoie une erreur 409.
+- **Produits suivis à l'unité** : `serialTracked` et `warrantyMonths` sont portés par le produit. Les IMEI et numéros de série de chaque unité seront gérés avec le stock.
 
 ## Tests
 

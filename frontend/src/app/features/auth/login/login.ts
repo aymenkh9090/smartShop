@@ -1,14 +1,18 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { Router } from '@angular/router';
 
-import { ApiError } from '../../../core/models/api-error';
 import { AuthService } from '../../../core/services/auth.service';
+import { apiErrorMessage } from '../../../core/utils/api-error.utils';
+import { fieldErrorMessage } from '../../../shared/utils/form-errors';
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './login.html',
   styleUrl: './login.scss',
@@ -20,6 +24,7 @@ export class Login {
   /** Lu depuis le query param ?returnUrl= (withComponentInputBinding). */
   readonly returnUrl = input<string>();
 
+  protected readonly errorOf = fieldErrorMessage;
   protected readonly submitting = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
 
@@ -51,15 +56,9 @@ export class Login {
   }
 
   private toMessage(error: unknown): string {
-    if (error instanceof HttpErrorResponse) {
-      if (error.status === 0) {
-        return 'Serveur injoignable. Verifiez votre connexion.';
-      }
-      if (error.status === 401) {
-        return 'Identifiants invalides.';
-      }
-      return (error.error as ApiError | null)?.message ?? 'Une erreur est survenue.';
+    if (error instanceof HttpErrorResponse && error.status === 401) {
+      return 'Identifiants invalides.';
     }
-    return 'Une erreur est survenue.';
+    return apiErrorMessage(error);
   }
 }

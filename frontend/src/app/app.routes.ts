@@ -19,6 +19,24 @@ export const routes: Routes = [
         title: 'Tableau de bord - SmartShop',
         loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard),
       },
+      {
+        path: 'categories',
+        loadChildren: () => import('./features/categories/categories.routes').then((m) => m.CATEGORY_ROUTES),
+      },
+      {
+        path: 'products',
+        loadChildren: () => import('./features/products/products.routes').then((m) => m.PRODUCT_ROUTES),
+      },
+      {
+        path: 'customers',
+        loadChildren: () => import('./features/customers/customers.routes').then((m) => m.CUSTOMER_ROUTES),
+      },
+      {
+        path: 'suppliers',
+        canActivate: [authGuard],
+        data: { roles: ['MANAGER'] },
+        loadChildren: () => import('./features/suppliers/suppliers.routes').then((m) => m.SUPPLIER_ROUTES),
+      },
     ],
   },
   { path: '**', redirectTo: '' },

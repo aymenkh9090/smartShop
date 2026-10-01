@@ -1,41 +1,39 @@
 :host {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
 }
 
-.app-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 1.5rem;
-  background: #1f2937;
-  color: #fff;
-
-  h1 {
-    margin: 0;
-    font-size: 1.25rem;
-    line-height: 3.5rem;
-  }
-}
-
-.user-menu {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
+.app-toolbar {
+  background: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
 
   button {
-    padding: 0.4rem 0.8rem;
-    border: 1px solid #fff;
-    border-radius: 4px;
-    background: transparent;
-    color: #fff;
-    font: inherit;
-    cursor: pointer;
+    color: inherit;
   }
+}
+
+.app-name {
+  font: var(--mat-sys-title-large);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.user-name {
+  margin-right: 1rem;
+  font: var(--mat-sys-body-medium);
+}
+
+.app-container {
+  flex: 1;
+}
+
+.app-sidenav {
+  width: 220px;
 }
 
 .app-content {
-  flex: 1;
   padding: 1.5rem;
 }

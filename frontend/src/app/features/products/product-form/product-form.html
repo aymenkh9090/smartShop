@@ -1,0 +1,100 @@
+<div class="page-header">
+  <h2>{{ isEdit() ? 'Modifier le produit' : 'Nouveau produit' }}</h2>
+</div>
+
+<form class="form-card" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  <div class="form-grid">
+    <mat-form-field>
+      <mat-label>SKU (code interne)</mat-label>
+      <input matInput formControlName="sku" />
+      <mat-error>{{ errorOf(form.controls.sku) }}</mat-error>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Code-barres</mat-label>
+      <input matInput formControlName="barcode" />
+      <mat-error>{{ errorOf(form.controls.barcode) }}</mat-error>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Reference fabricant</mat-label>
+      <input matInput formControlName="reference" />
+      <mat-error>{{ errorOf(form.controls.reference) }}</mat-error>
+    </mat-form-field>
+
+    <mat-form-field class="full-width">
+      <mat-label>Nom</mat-label>
+      <input matInput formControlName="name" />
+      <mat-error>{{ errorOf(form.controls.name) }}</mat-error>
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Categorie</mat-label>
+      <mat-select formControlName="categoryId">
+        @for (category of categories(); track category.id) {
+          <mat-option [value]="category.id">{{ category.name }}</mat-option>
+        }
+      </mat-select>
+      <mat-error>{{ errorOf(form.controls.categoryId) }}</mat-error>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Type</mat-label>
+      <mat-select formControlName="type">
+        @for (type of types; track type) {
+          <mat-option [value]="type">{{ typeLabels[type] }}</mat-option>
+        }
+      </mat-select>
+      <mat-error>{{ errorOf(form.controls.type) }}</mat-error>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Etat</mat-label>
+      <mat-select formControlName="condition">
+        @for (condition of conditions; track condition) {
+          <mat-option [value]="condition">{{ conditionLabels[condition] }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Marque</mat-label>
+      <input matInput formControlName="brand" />
+      <mat-error>{{ errorOf(form.controls.brand) }}</mat-error>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Modele</mat-label>
+      <input matInput formControlName="model" />
+      <mat-error>{{ errorOf(form.controls.model) }}</mat-error>
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Prix d'achat (DT)</mat-label>
+      <input matInput type="number" min="0" step="0.001" formControlName="purchasePrice" />
+      <mat-error>{{ errorOf(form.controls.purchasePrice) }}</mat-error>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Prix de vente (DT)</mat-label>
+      <input matInput type="number" min="0" step="0.001" formControlName="salePrice" />
+      <mat-error>{{ errorOf(form.controls.salePrice) }}</mat-error>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Seuil de stock minimum</mat-label>
+      <input matInput type="number" min="0" step="1" formControlName="minStock" />
+      <mat-error>{{ errorOf(form.controls.minStock) }}</mat-error>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Garantie (mois)</mat-label>
+      <input matInput type="number" min="0" max="120" step="1" formControlName="warrantyMonths" />
+      <mat-error>{{ errorOf(form.controls.warrantyMonths) }}</mat-error>
+    </mat-form-field>
+    <mat-checkbox formControlName="serialTracked">Suivi a l'unite (IMEI / numero de serie)</mat-checkbox>
+
+    <mat-form-field class="full-width">
+      <mat-label>Description</mat-label>
+      <textarea matInput formControlName="description" rows="3"></textarea>
+      <mat-error>{{ errorOf(form.controls.description) }}</mat-error>
+    </mat-form-field>
+  </div>
+  <p class="mat-caption">La quantite en stock se met a jour uniquement par les mouvements de stock.</p>
+  <div class="form-actions">
+    <a mat-button routerLink="/products">Annuler</a>
+    <button mat-flat-button type="submit" [disabled]="submitting()">Enregistrer</button>
+  </div>
+</form>
