@@ -1,0 +1,18 @@
+# Profil de developpement local.
+# Charge le fichier .env (non versionne) a la racine du projet, partage avec docker-compose.
+spring:
+  config:
+    import:
+      - optional:file:../.env[.properties]
+      - optional:file:.env[.properties]
+  jpa:
+    show-sql: false
+
+smartshop:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+
+logging:
+  level:
+    com.smartshop: DEBUG
+    org.springframework.security: INFO

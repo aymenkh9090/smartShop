@@ -1,0 +1,54 @@
+# ===== Environnement / secrets =====
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+application-local.yml
+application-local.yaml
+
+# ===== Java / Maven / Spring Boot =====
+target/
+*.class
+*.log
+hs_err_pid*
+.mvn/wrapper/maven-wrapper.jar
+HELP.md
+
+# ===== Node / Angular =====
+node_modules/
+dist/
+.angular/
+coverage/
+npm-debug.log*
+yarn-error.log*
+.npm/
+
+# ===== IDE =====
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.classpath
+.project
+.settings/
+.factorypath
+.apt_generated
+.sts4-cache/
+
+# ===== Docker (donnees locales eventuelles) =====
+docker-data/
+*.pid
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+
+# ===== Claude Code (parametres personnels) =====
+.claude/settings.local.json
