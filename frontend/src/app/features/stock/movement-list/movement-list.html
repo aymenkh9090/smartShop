@@ -1,0 +1,92 @@
+<div class="page-header">
+  <h2>Mouvements de stock</h2>
+  <div>
+    <a mat-button routerLink="units"><mat-icon>qr_code_scanner</mat-icon> Recherche IMEI</a>
+    @if (canManage()) {
+      <a mat-stroked-button routerLink="inventory"><mat-icon>fact_check</mat-icon> Inventaire</a>
+      <a mat-flat-button routerLink="new"><mat-icon>add</mat-icon> Nouveau mouvement</a>
+    }
+  </div>
+</div>
+
+<form class="filters" [formGroup]="filters">
+  <mat-form-field class="search">
+    <mat-label>Rechercher</mat-label>
+    <input matInput formControlName="q" placeholder="Produit, SKU, reference, motif..." />
+    <mat-icon matSuffix>search</mat-icon>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>Type</mat-label>
+    <mat-select formControlName="type">
+      <mat-option [value]="null">Tous</mat-option>
+      @for (type of types; track type) {
+        <mat-option [value]="type">{{ typeLabels[type] }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>Periode</mat-label>
+    <mat-date-range-input [rangePicker]="picker">
+      <input matStartDate formControlName="from" placeholder="Du" />
+      <input matEndDate formControlName="to" placeholder="Au" />
+    </mat-date-range-input>
+    <mat-datepicker-toggle matIconSuffix [for]="picker" />
+    <mat-date-range-picker #picker />
+  </mat-form-field>
+</form>
+
+@if (loading()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+<div class="table-container">
+  <table mat-table [dataSource]="page().content">
+    <ng-container matColumnDef="createdAt">
+      <th mat-header-cell *matHeaderCellDef>Date</th>
+      <td mat-cell *matCellDef="let m">{{ m.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+    </ng-container>
+    <ng-container matColumnDef="product">
+      <th mat-header-cell *matHeaderCellDef>Produit</th>
+      <td mat-cell *matCellDef="let m">
+        {{ m.product.name }}
+        <div class="mat-caption">{{ m.product.sku }}</div>
+      </td>
+    </ng-container>
+    <ng-container matColumnDef="type">
+      <th mat-header-cell *matHeaderCellDef>Type</th>
+      <td mat-cell *matCellDef="let m"><span class="badge">{{ typeLabel(m.type) }}</span></td>
+    </ng-container>
+    <ng-container matColumnDef="quantityChange">
+      <th mat-header-cell *matHeaderCellDef>Variation</th>
+      <td mat-cell *matCellDef="let m">
+        <strong>{{ m.quantityChange > 0 ? '+' : '' }}{{ m.quantityChange }}</strong>
+        @if (m.units.length) {
+          <mat-icon class="units-icon" [matTooltip]="unitsLabel(m.units)" aria-label="Unites">qr_code</mat-icon>
+        }
+      </td>
+    </ng-container>
+    <ng-container matColumnDef="quantityAfter">
+      <th mat-header-cell *matHeaderCellDef>Stock apres</th>
+      <td mat-cell *matCellDef="let m">{{ m.quantityAfter }}</td>
+    </ng-container>
+    <ng-container matColumnDef="reason">
+      <th mat-header-cell *matHeaderCellDef>Motif</th>
+      <td mat-cell *matCellDef="let m">{{ m.reason }}</td>
+    </ng-container>
+    <ng-container matColumnDef="reference">
+      <th mat-header-cell *matHeaderCellDef>Reference</th>
+      <td mat-cell *matCellDef="let m">{{ m.reference }}</td>
+    </ng-container>
+    <ng-container matColumnDef="createdBy">
+      <th mat-header-cell *matHeaderCellDef>Par</th>
+      <td mat-cell *matCellDef="let m">{{ m.createdBy.username }}</td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="columns"></tr>
+    <tr mat-row *matRowDef="let row; columns: columns"></tr>
+    <tr class="mat-mdc-row" *matNoDataRow>
+      <td class="no-data" [attr.colspan]="columns.length">Aucun mouvement.</td>
+    </tr>
+  </table>
+  <mat-paginator [length]="page().totalElements" [pageIndex]="query().page" [pageSize]="query().size"
+                 [pageSizeOptions]="[10, 20, 50, 100]" (page)="onPage($event)" />
+</div>

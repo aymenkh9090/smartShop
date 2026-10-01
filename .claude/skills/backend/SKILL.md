@@ -17,6 +17,9 @@ description: Regles pour coder dans backend/ (Spring Boot 4, Java 21) - nouvelle
 - Montants : `BigDecimal` (colonne `numeric(12,3)` - le dinar a 3 decimales). Jamais `double`.
 - Erreurs : lever `ResourceNotFoundException` / `BusinessException` (ou une sous-classe) ; `GlobalExceptionHandler` produit le JSON. Jamais de try/catch qui avale une erreur.
 - Mouvements de stock, paiements, statuts SAV : toujours historises, jamais une simple mise a jour de champ.
+- **Stock : `Product.changeQuantity` n'est appele que par `StockService`** (verrou `findByIdForUpdate`, mouvement trace). Ventes, achats, SAV doivent passer par `StockService` dans leur propre transaction, jamais modifier la quantite eux-memes. Produits `serialTracked` : quantite = nombre d'unites `IN_STOCK`.
+- Plusieurs verrous dans une transaction : verrouiller dans un ordre stable (ex. par id croissant) pour eviter les interblocages.
+- Auteur d'une operation : `CurrentUserProvider.currentUser()` (claim `uid` du JWT).
 - Config : `application.yml` + profils ; tout secret via `${VARIABLE}` sans valeur par defaut.
 - Spring Boot 4 : starters modulaires (`spring-boot-starter-webmvc`, ...), Jackson 3 (`tools.jackson.*`).
 - **Jackson 3 : jamais de primitif (`boolean`, `int`) dans un Request DTO.** Un champ absent fait echouer toute la desérialisation (400 "corps illisible"). Utiliser `Boolean`/`Integer` + `@NotNull`.

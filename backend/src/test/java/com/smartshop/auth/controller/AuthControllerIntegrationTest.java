@@ -2,7 +2,6 @@ package com.smartshop.auth.controller;
 
 import com.jayway.jsonpath.JsonPath;
 import com.smartshop.TestcontainersConfiguration;
-import com.smartshop.auth.repository.RefreshTokenRepository;
 import com.smartshop.user.dto.UserCreateRequest;
 import com.smartshop.user.entity.Role;
 import com.smartshop.user.entity.User;
@@ -14,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
@@ -41,12 +41,12 @@ class AuthControllerIntegrationTest {
     @Autowired
     private UserRepository userRepository;
     @Autowired
-    private RefreshTokenRepository refreshTokenRepository;
+    private JdbcTemplate jdbcTemplate;
 
     @BeforeEach
     void setUp() {
-        refreshTokenRepository.deleteAll();
-        userRepository.deleteAll();
+        // CASCADE : les mouvements de stock crees par d'autres classes de test referencent des utilisateurs
+        jdbcTemplate.execute("truncate table refresh_token, app_user restart identity cascade");
         createUser("admin", Role.ADMIN);
         createUser("seller", Role.SELLER);
     }

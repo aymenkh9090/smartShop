@@ -2,6 +2,7 @@ package com.smartshop.product.entity;
 
 import com.smartshop.category.entity.Category;
 import com.smartshop.common.entity.AuditableEntity;
+import com.smartshop.common.exception.InsufficientStockException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -94,5 +95,19 @@ public class Product extends AuditableEntity {
 
     public boolean isLowStock() {
         return quantity <= minStock;
+    }
+
+    /**
+     * Applique une variation de stock. A appeler uniquement depuis StockService, qui trace le mouvement
+     * et verrouille le produit.
+     *
+     * @throws InsufficientStockException si la quantite deviendrait negative
+     */
+    public void changeQuantity(int delta) {
+        int newQuantity = quantity + delta;
+        if (newQuantity < 0) {
+            throw new InsufficientStockException(name, quantity, -delta);
+        }
+        quantity = newQuantity;
     }
 }

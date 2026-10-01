@@ -1,0 +1,104 @@
+<div class="page-header">
+  <h2>Nouveau mouvement de stock</h2>
+</div>
+
+<form class="form-card" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  @if (product(); as p) {
+    <div class="selected-product">
+      <div>
+        <strong>{{ p.sku }} - {{ p.name }}</strong>
+        <div>Stock actuel : {{ p.quantity }}</div>
+      </div>
+      @if (p.serialTracked) {
+        <span class="badge">Suivi a l'unite</span>
+      }
+      <span class="spacer"></span>
+      <button mat-button type="button" (click)="changeProduct()">Changer de produit</button>
+    </div>
+  } @else {
+    <app-product-picker (selected)="selectProduct($event)" />
+  }
+
+  <div class="form-grid">
+    <mat-form-field>
+      <mat-label>Type de mouvement</mat-label>
+      <mat-select formControlName="type">
+        @for (type of availableTypes(); track type) {
+          <mat-option [value]="type">{{ typeLabels[type] }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    @if (unitMode() === 'none') {
+      <mat-form-field>
+        <mat-label>Quantite</mat-label>
+        <input matInput type="number" step="1" formControlName="quantity" />
+        @if (type() === 'ADJUSTMENT') {
+          <mat-hint>Positive pour ajouter, negative pour retirer</mat-hint>
+        }
+        <mat-error>
+          {{ form.controls.quantity.hasError('nonZero') ? 'Un ajustement ne peut pas etre nul' : errorOf(form.controls.quantity) }}
+        </mat-error>
+      </mat-form-field>
+    }
+
+    <mat-form-field>
+      <mat-label>Motif{{ type() === 'STOCK_IN' ? ' (facultatif)' : '' }}</mat-label>
+      <input matInput formControlName="reason" placeholder="Reception, casse, perte..." />
+      <mat-error>{{ errorOf(form.controls.reason) }}</mat-error>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Reference (facultatif)</mat-label>
+      <input matInput formControlName="reference" placeholder="Bon de livraison, facture..." />
+      <mat-error>{{ errorOf(form.controls.reference) }}</mat-error>
+    </mat-form-field>
+  </div>
+
+  @if (unitMode() === 'new') {
+    <h3>Unites recues ({{ form.controls.units.length }})</h3>
+    <div formArrayName="units">
+      @for (row of form.controls.units.controls; track row; let i = $index) {
+        <div class="unit-row" [formGroupName]="i">
+          <mat-form-field>
+            <mat-label>IMEI</mat-label>
+            <input matInput formControlName="imei" inputmode="numeric" maxlength="15" />
+            <mat-error>{{ errorOf(row.controls.imei) }}</mat-error>
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Numero de serie</mat-label>
+            <input matInput formControlName="serialNumber" />
+            <mat-error>{{ errorOf(row.controls.serialNumber) }}</mat-error>
+          </mat-form-field>
+          <button mat-icon-button type="button" (click)="removeUnitRow(i)" [disabled]="form.controls.units.length === 1"
+                  aria-label="Retirer cette unite">
+            <mat-icon>remove_circle_outline</mat-icon>
+          </button>
+          @if (row.hasError('identifierRequired') && row.touched) {
+            <small class="row-error">Saisir un IMEI ou un numero de serie</small>
+          }
+        </div>
+      }
+    </div>
+    <button mat-stroked-button type="button" (click)="addUnitRow()"><mat-icon>add</mat-icon> Ajouter une unite</button>
+  }
+
+  @if (unitMode() === 'existing') {
+    <h3>{{ type() === 'RETURN' ? 'Unites retournees' : 'Unites a sortir' }} ({{ selectedUnitIds().length }})</h3>
+    @if (selectableUnits().length === 0) {
+      <p class="no-data">Aucune unite disponible pour ce mouvement.</p>
+    } @else {
+      <mat-selection-list #unitList (selectionChange)="onUnitSelection(unitList)">
+        @for (unit of selectableUnits(); track unit.id) {
+          <mat-list-option [value]="unit.id">
+            {{ unit.imei ?? '' }} {{ unit.serialNumber ? 'SN ' + unit.serialNumber : '' }}
+          </mat-list-option>
+        }
+      </mat-selection-list>
+    }
+  }
+
+  <div class="form-actions">
+    <a mat-button routerLink="/stock">Annuler</a>
+    <button mat-flat-button type="submit" [disabled]="submitting()">Enregistrer</button>
+  </div>
+</form>

@@ -62,6 +62,11 @@ public class ProductService {
         if (barcode != null && productRepository.existsByBarcodeAndIdNot(barcode, id)) {
             throw duplicate("code-barres", barcode);
         }
+        if (request.serialTracked() != product.isSerialTracked() && product.getQuantity() > 0) {
+            throw new BusinessException(
+                    "Impossible de changer le suivi a l'unite d'un produit en stock (%d en stock)"
+                            .formatted(product.getQuantity()));
+        }
         Category category = categoryService.getEntity(request.categoryId());
         productMapper.update(request, product);
         product.setCategory(category);

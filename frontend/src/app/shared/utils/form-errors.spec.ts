@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { FormControl, FormGroup, Validators } from '@angular/forms';
+import { FormArray, FormControl, FormGroup, Validators } from '@angular/forms';
 
 import { applyServerErrors, fieldErrorMessage } from './form-errors';
 
@@ -23,5 +23,23 @@ describe('form errors', () => {
     expect(fieldErrorMessage(form.controls.sku)).toBe('deja utilise');
     expect(form.controls.sku.touched).toBeTrue();
     expect(form.controls.name.valid).toBeTrue();
+  });
+
+  it('maps indexed backend fields (units[1].imei) to form array paths', () => {
+    const form = new FormGroup({
+      units: new FormArray([
+        new FormGroup({ imei: new FormControl('') }),
+        new FormGroup({ imei: new FormControl('') }),
+      ]),
+    });
+    const error = new HttpErrorResponse({
+      status: 400,
+      error: { errors: [{ field: 'units[1].imei', message: 'IMEI invalide' }] },
+    });
+
+    applyServerErrors(form, error);
+
+    expect(form.controls.units.at(1).controls.imei.errors?.['server']).toBe('IMEI invalide');
+    expect(form.controls.units.at(0).valid).toBeTrue();
   });
 });

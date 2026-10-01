@@ -4,7 +4,7 @@ Application web de gestion pour une boutique de smartphones, récepteurs, abonne
 
 Elle centralise : stock, ventes, achats, clients, fournisseurs, crédits clients et fournisseurs, service après-vente (SAV) et tableau de bord.
 
-> État actuel : **Phase 3 – référentiel** terminée (catégories, produits, clients, fournisseurs, écrans Angular Material). Voir `CLAUDE.md` pour la feuille de route.
+> État actuel : **Phase 4 – stock** terminée (mouvements tracés, IMEI, inventaire, alertes de stock faible). Voir `CLAUDE.md` pour la feuille de route.
 
 ## Architecture
 
@@ -174,6 +174,30 @@ Matrice cible (appliquée avec `@PreAuthorize` au fil des phases) :
   - champs texte vides → `null`.
 - **Unicité** : SKU, code-barres, téléphone et CIN client, nom de catégorie, raison sociale et matricule fiscal fournisseur (sans tenir compte de la casse pour les noms). Un doublon renvoie une erreur 409.
 - **Produits suivis à l'unité** : `serialTracked` et `warrantyMonths` sont portés par le produit. Les IMEI et numéros de série de chaque unité seront gérés avec le stock.
+
+## Stock (phase 4)
+
+| Méthode | URL | Accès | Description |
+|---|---|---|---|
+| GET | `/api/stock/movements` | authentifié | historique filtrable (`productId`, `type`, `from`, `to` en ISO-8601, `q`), trié du plus récent au plus ancien |
+| GET | `/api/stock/movements/{id}` | authentifié | détail, avec les unités concernées |
+| POST | `/api/stock/movements` | MANAGER | entrée, sortie, ajustement ou retour |
+| POST | `/api/stock/inventory` | MANAGER | comptage physique : un ajustement par écart, en tout-ou-rien |
+| GET | `/api/stock/units` | authentifié | recherche d'unités par IMEI ou numéro de série (`q`, `productId`, `status`) |
+| GET | `/api/products?lowStock=true` | authentifié | alertes : produits dont la quantité est inférieure ou égale au seuil |
+
+**Règles :**
+- **Source unique** : `product.quantity` n'est modifiée que par `StockService`, sous verrou pessimiste du produit. Chaque variation crée un `stock_movement` immuable (variation signée, quantité après, motif, référence, auteur, date). Un test de concurrence vérifie qu'il n'y a jamais de survente.
+- **Types et quantités** :
+  - `STOCK_IN`, `STOCK_OUT` et `RETURN` : quantité positive ;
+  - `ADJUSTMENT` : variation signée, non nulle.
+- **Motif** : obligatoire sauf pour une entrée. Une entrée est refusée sur un produit désactivé. Un stock insuffisant renvoie 409.
+- **Produits suivis à l'unité** :
+  - une entrée crée une unité par article (`units`, avec un IMEI valide — 15 chiffres et clé de Luhn — et/ou un numéro de série) ;
+  - une sortie ou un retour désigne les unités existantes (`unitIds`) ;
+  - la quantité reste toujours égale au nombre d'unités `IN_STOCK` ;
+  - pour ces produits, `serialTracked` n'est plus modifiable tant qu'il reste du stock.
+- **Inventaire** : il ne concerne que les produits non suivis ; les produits suivis s'ajustent unité par unité.
 
 ## Tests
 

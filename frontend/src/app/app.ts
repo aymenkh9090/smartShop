@@ -20,6 +20,7 @@ const NAV_ITEMS: NavItem[] = [
   { path: '/dashboard', label: 'Tableau de bord', icon: 'dashboard' },
   { path: '/products', label: 'Produits', icon: 'inventory_2' },
   { path: '/categories', label: 'Categories', icon: 'category' },
+  { path: '/stock', label: 'Stock', icon: 'warehouse' },
   { path: '/customers', label: 'Clients', icon: 'people' },
   { path: '/suppliers', label: 'Fournisseurs', icon: 'local_shipping', roles: ['MANAGER'] },
 ];

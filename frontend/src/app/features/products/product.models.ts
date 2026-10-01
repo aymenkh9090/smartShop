@@ -80,4 +80,6 @@ export interface ProductFilter {
   categoryId?: number | null;
   type?: ProductType | null;
   active?: boolean | null;
+  /** true : produits dont la quantite est inferieure ou egale au seuil */
+  lowStock?: boolean | null;
 }

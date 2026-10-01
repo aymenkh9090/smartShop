@@ -2,10 +2,13 @@ import { AbstractControl, FormGroup } from '@angular/forms';
 
 import { apiFieldErrors } from '../../core/utils/api-error.utils';
 
-/** Reporte les erreurs de validation du backend sur les champs du formulaire correspondants. */
+/**
+ * Reporte les erreurs de validation du backend sur les champs du formulaire correspondants.
+ * Les champs indexes du backend (`units[0].imei`) sont convertis en chemins Angular (`units.0.imei`).
+ */
 export function applyServerErrors(form: FormGroup, error: unknown): void {
   for (const fieldError of apiFieldErrors(error)) {
-    const control = form.get(fieldError.field);
+    const control = form.get(fieldError.field.replace(/\[(\d+)\]/g, '.$1'));
     if (control) {
       control.setErrors({ ...(control.errors ?? {}), server: fieldError.message });
       control.markAsTouched();
@@ -36,6 +39,9 @@ export function fieldErrorMessage(control: AbstractControl): string {
   }
   if (errors['max']) {
     return `Valeur maximale : ${errors['max'].max}`;
+  }
+  if (errors['imei']) {
+    return 'IMEI invalide (15 chiffres avec cle de controle)';
   }
   if (errors['pattern']) {
     return 'Format invalide';

@@ -1,0 +1,71 @@
+<div class="page-header">
+  <h2>Inventaire</h2>
+</div>
+
+<form class="form-card" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  <div class="form-grid">
+    <mat-form-field>
+      <mat-label>Reference (facultatif)</mat-label>
+      <input matInput formControlName="reference" placeholder="INV-2026-10" />
+      <mat-error>{{ errorOf(form.controls.reference) }}</mat-error>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Motif (par defaut : Inventaire)</mat-label>
+      <input matInput formControlName="reason" />
+      <mat-error>{{ errorOf(form.controls.reason) }}</mat-error>
+    </mat-form-field>
+  </div>
+
+  <app-product-picker label="Ajouter un produit compte" (selected)="addProduct($event)" />
+
+  @if (form.controls.lines.length) {
+    <table class="inventory-table" formArrayName="lines">
+      <thead>
+        <tr>
+          <th>Produit</th>
+          <th>Stock theorique</th>
+          <th>Quantite comptee</th>
+          <th>Ecart</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (line of form.controls.lines.controls; track line; let i = $index) {
+          <tr [formGroupName]="i">
+            <td>
+              {{ line.controls.product.value.name }}
+              <div class="mat-caption">{{ line.controls.product.value.sku }}</div>
+            </td>
+            <td>{{ line.controls.product.value.quantity }}</td>
+            <td>
+              <mat-form-field class="count-field" subscriptSizing="dynamic">
+                <input matInput type="number" min="0" step="1" formControlName="countedQuantity"
+                       [attr.aria-label]="'Quantite comptee pour ' + line.controls.product.value.name" />
+                <mat-error>{{ errorOf(line.controls.countedQuantity) }}</mat-error>
+              </mat-form-field>
+            </td>
+            <td>
+              @if (difference(line); as diff) {
+                <span class="badge" [class.warn]="diff < 0">{{ diff > 0 ? '+' : '' }}{{ diff }}</span>
+              } @else if (difference(line) === 0) {
+                <span class="badge muted">0</span>
+              }
+            </td>
+            <td>
+              <button mat-icon-button type="button" (click)="removeLine(i)" aria-label="Retirer la ligne">
+                <mat-icon>close</mat-icon>
+              </button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  } @else {
+    <p class="no-data">Recherchez les produits comptes pour les ajouter.</p>
+  }
+
+  <div class="form-actions">
+    <a mat-button routerLink="/stock">Annuler</a>
+    <button mat-flat-button type="submit" [disabled]="submitting()">Valider l'inventaire</button>
+  </div>
+</form>

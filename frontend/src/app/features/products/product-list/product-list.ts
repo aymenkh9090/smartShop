@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -43,6 +44,7 @@ interface ProductQuery extends PageRequest {
     MatInputModule,
     MatSelectModule,
     MatButtonModule,
+    MatCheckboxModule,
     MatIconModule,
     MatProgressBarModule,
     MatTooltipModule,
@@ -75,6 +77,7 @@ export class ProductList {
     type: new FormControl<ProductType | null>(null),
     /** '' = tous, 'true' = actifs, 'false' = inactifs */
     active: new FormControl<'' | 'true' | 'false'>('true', { nonNullable: true }),
+    lowStock: new FormControl(false, { nonNullable: true }),
   });
 
   protected readonly query = signal<ProductQuery>({
@@ -150,6 +153,7 @@ export class ProductList {
       categoryId: value.categoryId,
       type: value.type,
       active: value.active === '' ? null : value.active === 'true',
+      lowStock: value.lowStock || null,
     };
   }
 }

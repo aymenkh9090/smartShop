@@ -32,6 +32,9 @@ public final class ProductSpecifications {
         if (filter.type() != null) {
             specs.add((root, query, cb) -> cb.equal(root.get("type"), filter.type()));
         }
+        if (Boolean.TRUE.equals(filter.lowStock())) {
+            specs.add((root, query, cb) -> cb.le(root.get("quantity"), root.<Integer>get("minStock")));
+        }
         if (filter.active() != null) {
             specs.add((root, query, cb) -> cb.equal(root.get("active"), filter.active()));
         }
