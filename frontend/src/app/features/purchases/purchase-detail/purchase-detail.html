@@ -1,0 +1,78 @@
+@if (purchase(); as p) {
+  <div class="page-header">
+    <h2>Achat {{ p.reference }}</h2>
+    <a mat-button routerLink="/purchases"><mat-icon>arrow_back</mat-icon> Achats</a>
+  </div>
+
+  <section class="form-card detail">
+    <dl class="info">
+      <dt>Date</dt>
+      <dd>{{ p.createdAt | date: 'dd/MM/yyyy HH:mm' }} par {{ p.createdBy }}</dd>
+      <dt>Fournisseur</dt>
+      <dd>{{ p.supplier.name }}</dd>
+      @if (p.supplierInvoiceRef) {
+        <dt>Facture fournisseur</dt>
+        <dd>{{ p.supplierInvoiceRef }}</dd>
+      }
+      @if (p.notes) {
+        <dt>Notes</dt>
+        <dd>{{ p.notes }}</dd>
+      }
+    </dl>
+
+    <h3>Articles recus</h3>
+    <table class="detail-table">
+      <thead>
+        <tr><th>Produit</th><th>IMEI / numero de serie</th><th>Qte</th><th class="amount">Cout unitaire</th><th class="amount">Total</th></tr>
+      </thead>
+      <tbody>
+        @for (item of p.items; track item.id) {
+          <tr>
+            <td>{{ item.productName }}<div class="mat-caption">{{ item.productSku }}</div></td>
+            <td>
+              @for (unit of item.units; track unit.id) {
+                <div>{{ unit.imei ?? 'SN ' + unit.serialNumber }}</div>
+              }
+            </td>
+            <td>{{ item.quantity }}</td>
+            <td class="amount">{{ item.unitCost | currency: 'TND' : 'symbol' : '1.3-3' }}</td>
+            <td class="amount">{{ item.lineTotal | currency: 'TND' : 'symbol' : '1.3-3' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    <dl class="totals">
+      <dt>Total</dt><dd class="grand-total">{{ p.total | currency: 'TND' : 'symbol' : '1.3-3' }}</dd>
+      <dt>Paye</dt><dd>{{ p.amountPaid | currency: 'TND' : 'symbol' : '1.3-3' }}</dd>
+      <dt>Reste du</dt>
+      <dd [class.due]="p.amountDue > 0">
+        {{ p.amountDue | currency: 'TND' : 'symbol' : '1.3-3' }}
+        @if (p.dueDate) {
+          (echeance {{ p.dueDate | date: 'dd/MM/yyyy' }})
+        }
+      </dd>
+    </dl>
+    <p><span class="badge" [class.warn]="p.paymentStatus !== 'PAID'">{{ paymentStatusLabels[p.paymentStatus] }}</span></p>
+
+    <h3>Paiements</h3>
+    @if (p.payments.length) {
+      <table class="detail-table">
+        <thead><tr><th>Date</th><th>Moyen</th><th>Reference</th><th>Par</th><th class="amount">Montant</th></tr></thead>
+        <tbody>
+          @for (payment of p.payments; track payment.id) {
+            <tr>
+              <td>{{ payment.paidAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+              <td>{{ methodLabel(payment.method) }}</td>
+              <td>{{ payment.reference }}</td>
+              <td>{{ payment.createdBy }}</td>
+              <td class="amount">{{ payment.amount | currency: 'TND' : 'symbol' : '1.3-3' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    } @else {
+      <p class="no-data">Aucun paiement.</p>
+    }
+  </section>
+}

@@ -1,0 +1,86 @@
+.sale-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .sale-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-card {
+  max-width: none;
+}
+
+.lines-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: 0.5rem;
+    text-align: left;
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+    vertical-align: middle;
+  }
+
+  .amount {
+    text-align: right;
+    white-space: nowrap;
+  }
+}
+
+.quantity-field {
+  width: 100px;
+}
+
+.units-field {
+  width: 240px;
+}
+
+.summary h3 {
+  margin: 1rem 0 0.5rem;
+  font: var(--mat-sys-title-small);
+
+  &:first-child {
+    margin-top: 0;
+  }
+}
+
+.selected-customer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.full {
+  width: 100%;
+}
+
+.totals {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.25rem 1rem;
+  margin: 0 0 0.75rem;
+
+  dd {
+    margin: 0;
+    text-align: right;
+  }
+
+  .grand-total {
+    font: var(--mat-sys-title-large);
+  }
+
+  .due {
+    color: var(--mat-sys-error);
+    font-weight: 500;
+  }
+}
+
+.blocking-error {
+  color: var(--mat-sys-error);
+}

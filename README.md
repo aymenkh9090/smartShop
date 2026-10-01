@@ -4,7 +4,7 @@ Application web de gestion pour une boutique de smartphones, récepteurs, abonne
 
 Elle centralise : stock, ventes, achats, clients, fournisseurs, crédits clients et fournisseurs, service après-vente (SAV) et tableau de bord.
 
-> État actuel : **Phase 4 – stock** terminée (mouvements tracés, IMEI, inventaire, alertes de stock faible). Voir `CLAUDE.md` pour la feuille de route.
+> État actuel : **Phase 5 – achats et ventes** terminée (ventes comptant ou à crédit, achats fournisseurs, paiements, annulation). Voir `CLAUDE.md` pour la feuille de route.
 
 ## Architecture
 
@@ -198,6 +198,32 @@ Matrice cible (appliquée avec `@PreAuthorize` au fil des phases) :
   - la quantité reste toujours égale au nombre d'unités `IN_STOCK` ;
   - pour ces produits, `serialTracked` n'est plus modifiable tant qu'il reste du stock.
 - **Inventaire** : il ne concerne que les produits non suivis ; les produits suivis s'ajustent unité par unité.
+
+## Ventes et achats (phase 5)
+
+| Méthode | URL | Accès | Description |
+|---|---|---|---|
+| GET | `/api/sales` | SELLER | liste filtrable (`q` : référence, nom ou téléphone du client ; `customerId`, `status`, `paymentStatus`, `from`, `to`) |
+| GET | `/api/sales/{id}` | SELLER | détail : lignes, IMEI, garantie, paiements |
+| POST | `/api/sales` | SELLER | nouvelle vente |
+| POST | `/api/sales/{id}/cancel` | MANAGER | annulation (`reason` obligatoire) |
+| GET | `/api/purchases` | MANAGER | liste filtrable (`q`, `supplierId`, `paymentStatus`, `from`, `to`) |
+| GET | `/api/purchases/{id}` | MANAGER | détail |
+| POST | `/api/purchases` | MANAGER | réception d'un achat fournisseur |
+
+**Règles :**
+- **Une seule transaction** : lignes, sorties ou entrées de stock (via `StockService`), paiements et totaux. Toute incohérence annule l'ensemble, y compris les mouvements déjà appliqués aux lignes précédentes ; un test d'intégration le vérifie.
+- **Montants** :
+  - calculés côté serveur (`BigDecimal`, 3 décimales) ;
+  - prix unitaire = **copie du prix de vente** au moment de la vente ;
+  - remise globale plafonnée au sous-total ;
+  - la somme des paiements ne peut pas dépasser le total.
+- **Paiements** : enregistrés séparément (montant, moyen, référence, auteur, date) et immuables. Statut `PAID`, `PARTIALLY_PAID` ou `UNPAID`.
+- **Vente à crédit** : une vente avec un reste dû **exige un client** et peut porter une échéance (`dueDate`). Le module crédits (phase 6) s'appuiera sur ces soldes.
+- **Produits suivis à l'unité** : la vente désigne les IMEI vendus (`unitIds`), qui passent à `SOLD`. La garantie (mois) est copiée sur la ligne pour le SAV.
+- **Annulation** : le stock est restitué (mouvements `RETURN`), les IMEI repassent en stock, et la vente reste dans l'historique avec le statut `CANCELLED`. Les remboursements éventuels ne sont pas encore gérés par l'application.
+- **Achat** : alimente le stock (création des IMEI) et met à jour le **dernier prix d'achat** du produit. Un reste dû constitue un crédit fournisseur.
+- **Références** : `V-AAAA-NNNNNN` et `A-AAAA-NNNNNN`, générées par séquence PostgreSQL. Une opération refusée consomme quand même un numéro, la numérotation peut donc présenter des trous.
 
 ## Tests
 

@@ -18,6 +18,9 @@ description: Regles pour coder dans backend/ (Spring Boot 4, Java 21) - nouvelle
 - Erreurs : lever `ResourceNotFoundException` / `BusinessException` (ou une sous-classe) ; `GlobalExceptionHandler` produit le JSON. Jamais de try/catch qui avale une erreur.
 - Mouvements de stock, paiements, statuts SAV : toujours historises, jamais une simple mise a jour de champ.
 - **Stock : `Product.changeQuantity` n'est appele que par `StockService`** (verrou `findByIdForUpdate`, mouvement trace). Ventes, achats, SAV doivent passer par `StockService` dans leur propre transaction, jamais modifier la quantite eux-memes. Produits `serialTracked` : quantite = nombre d'unites `IN_STOCK`.
+- Methodes internes appelees par une autre operation metier : `@Transactional(propagation = MANDATORY)` (ex. `StockService.recordSale`) pour garantir qu'elles s'executent dans la transaction de l'appelant.
+- Agregats (Sale, Purchase) : les montants sont calcules et verifies par l'entite (`complete()`), jamais saisis par le client ; montants via `Money` (3 decimales, HALF_UP).
+- Tester l'atomicite avec un echec sur une ligne traitee APRES une ligne reussie (sinon le rollback n'est pas reellement teste).
 - Plusieurs verrous dans une transaction : verrouiller dans un ordre stable (ex. par id croissant) pour eviter les interblocages.
 - Auteur d'une operation : `CurrentUserProvider.currentUser()` (claim `uid` du JWT).
 - Config : `application.yml` + profils ; tout secret via `${VARIABLE}` sans valeur par defaut.

@@ -1,0 +1,89 @@
+@if (sale(); as s) {
+  <div class="page-header">
+    <h2>
+      Vente {{ s.reference }}
+      <span class="badge" [class.muted]="s.status === 'CANCELLED'">{{ saleStatusLabels[s.status] }}</span>
+    </h2>
+    <div>
+      <a mat-button routerLink="/sales"><mat-icon>arrow_back</mat-icon> Ventes</a>
+      @if (canCancel()) {
+        <button mat-stroked-button type="button" (click)="cancel()"><mat-icon>undo</mat-icon> Annuler la vente</button>
+      }
+    </div>
+  </div>
+
+  <section class="form-card detail">
+    <dl class="info">
+      <dt>Date</dt>
+      <dd>{{ s.createdAt | date: 'dd/MM/yyyy HH:mm' }} par {{ s.createdBy }}</dd>
+      <dt>Client</dt>
+      <dd>{{ s.customer ? s.customer.lastName + ' ' + s.customer.firstName + ' - ' + s.customer.phone : 'Client comptoir' }}</dd>
+      @if (s.notes) {
+        <dt>Notes</dt>
+        <dd>{{ s.notes }}</dd>
+      }
+      @if (s.status === 'CANCELLED') {
+        <dt>Annulation</dt>
+        <dd>{{ s.cancelledAt | date: 'dd/MM/yyyy HH:mm' }} par {{ s.cancelledBy }} : {{ s.cancelReason }}</dd>
+      }
+    </dl>
+
+    <h3>Articles</h3>
+    <table class="detail-table">
+      <thead>
+        <tr><th>Produit</th><th>IMEI / numero de serie</th><th>Garantie</th><th>Qte</th><th class="amount">Prix</th><th class="amount">Total</th></tr>
+      </thead>
+      <tbody>
+        @for (item of s.items; track item.id) {
+          <tr>
+            <td>{{ item.productName }}<div class="mat-caption">{{ item.productSku }}</div></td>
+            <td>
+              @for (unit of item.units; track unit.id) {
+                <div>{{ unit.imei ?? 'SN ' + unit.serialNumber }}</div>
+              }
+            </td>
+            <td>{{ item.warrantyMonths ? item.warrantyMonths + ' mois' : '-' }}</td>
+            <td>{{ item.quantity }}</td>
+            <td class="amount">{{ item.unitPrice | currency: 'TND' : 'symbol' : '1.3-3' }}</td>
+            <td class="amount">{{ item.lineTotal | currency: 'TND' : 'symbol' : '1.3-3' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    <dl class="totals">
+      <dt>Sous-total</dt><dd>{{ s.subtotal | currency: 'TND' : 'symbol' : '1.3-3' }}</dd>
+      <dt>Remise</dt><dd>{{ s.discount | currency: 'TND' : 'symbol' : '1.3-3' }}</dd>
+      <dt>Total</dt><dd class="grand-total">{{ s.total | currency: 'TND' : 'symbol' : '1.3-3' }}</dd>
+      <dt>Paye</dt><dd>{{ s.amountPaid | currency: 'TND' : 'symbol' : '1.3-3' }}</dd>
+      <dt>Reste du</dt>
+      <dd [class.due]="s.amountDue > 0">
+        {{ s.amountDue | currency: 'TND' : 'symbol' : '1.3-3' }}
+        @if (s.dueDate) {
+          (echeance {{ s.dueDate | date: 'dd/MM/yyyy' }})
+        }
+      </dd>
+    </dl>
+    <p><span class="badge" [class.warn]="s.paymentStatus !== 'PAID'">{{ paymentStatusLabels[s.paymentStatus] }}</span></p>
+
+    <h3>Paiements</h3>
+    @if (s.payments.length) {
+      <table class="detail-table">
+        <thead><tr><th>Date</th><th>Moyen</th><th>Reference</th><th>Par</th><th class="amount">Montant</th></tr></thead>
+        <tbody>
+          @for (payment of s.payments; track payment.id) {
+            <tr>
+              <td>{{ payment.paidAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+              <td>{{ methodLabel(payment.method) }}</td>
+              <td>{{ payment.reference }}</td>
+              <td>{{ payment.createdBy }}</td>
+              <td class="amount">{{ payment.amount | currency: 'TND' : 'symbol' : '1.3-3' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    } @else {
+      <p class="no-data">Aucun paiement.</p>
+    }
+  </section>
+}

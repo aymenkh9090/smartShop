@@ -245,12 +245,16 @@ export class MovementForm implements OnInit {
     if (!product) {
       return;
     }
-    // Sortie : unites en stock. Retour : unites sorties (les ventes ajouteront le statut SOLD).
-    const status = type === 'RETURN' ? 'REMOVED' : 'IN_STOCK';
+    // Sortie : unites en stock. Retour : unites vendues ou sorties (tout sauf IN_STOCK).
+    const returning = type === 'RETURN';
     this.stockService
-      .searchUnits({ productId: product.id, status }, { page: 0, size: 100, sort: 'createdAt,desc' })
+      .searchUnits(
+        { productId: product.id, status: returning ? null : 'IN_STOCK' },
+        { page: 0, size: 100, sort: 'createdAt,desc' },
+      )
       .subscribe({
-        next: (page) => this.selectableUnits.set(page.content),
+        next: (page) =>
+          this.selectableUnits.set(returning ? page.content.filter((unit) => unit.status !== 'IN_STOCK') : page.content),
         error: (error: unknown) => this.notifications.error(error),
       });
   }

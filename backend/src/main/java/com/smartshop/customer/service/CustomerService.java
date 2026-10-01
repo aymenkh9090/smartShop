@@ -69,6 +69,16 @@ public class CustomerService {
         return customerMapper.toResponse(customer);
     }
 
+    /** Client actif, pour une operation (vente, achat) qui le reference. */
+    @Transactional(readOnly = true)
+    public Customer getActiveEntity(Long id) {
+        Customer entity = getEntity(id);
+        if (!entity.isActive()) {
+            throw new BusinessException("Client desactive : operation impossible");
+        }
+        return entity;
+    }
+
     private Customer getEntity(Long id) {
         return customerRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Client", id));

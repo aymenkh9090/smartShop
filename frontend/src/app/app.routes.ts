@@ -32,6 +32,18 @@ export const routes: Routes = [
         loadChildren: () => import('./features/stock/stock.routes').then((m) => m.STOCK_ROUTES),
       },
       {
+        path: 'sales',
+        canActivate: [authGuard],
+        data: { roles: ['SELLER'] },
+        loadChildren: () => import('./features/sales/sales.routes').then((m) => m.SALE_ROUTES),
+      },
+      {
+        path: 'purchases',
+        canActivate: [authGuard],
+        data: { roles: ['MANAGER'] },
+        loadChildren: () => import('./features/purchases/purchases.routes').then((m) => m.PURCHASE_ROUTES),
+      },
+      {
         path: 'customers',
         loadChildren: () => import('./features/customers/customers.routes').then((m) => m.CUSTOMER_ROUTES),
       },

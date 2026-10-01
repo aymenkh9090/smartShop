@@ -55,9 +55,10 @@ export class CustomerList {
 
   protected readonly canEdit = computed(() => this.auth.hasAnyRole(['SELLER']));
   protected readonly canChangeStatus = computed(() => this.auth.hasAnyRole(['MANAGER']));
+  protected readonly canSeeSales = computed(() => this.auth.hasAnyRole(['SELLER']));
   protected readonly columns = computed(() => {
     const columns = ['name', 'phone', 'email', 'cin', 'status'];
-    return this.canEdit() || this.canChangeStatus() ? [...columns, 'actions'] : columns;
+    return this.canEdit() || this.canChangeStatus() || this.canSeeSales() ? [...columns, 'actions'] : columns;
   });
 
   protected readonly filters = new FormGroup({

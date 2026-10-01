@@ -6,7 +6,8 @@ description: Regles pour coder dans frontend/ (Angular 20 standalone) - pages, c
 # Frontend SmartShop
 
 ## Structure (`src/app/`)
-- `core/` : singletons (services HTTP, guards, interceptors, modeles). Jamais importe par `shared/`.
+- `core/` : singletons (services HTTP, guards, interceptors, modeles transverses comme `page`, `payment`). Utilisable partout.
+- `shared/` ne depend jamais de `features/`. Une feature peut utiliser les services/pickers d'une autre feature (ex. `ProductPicker`).
 - `shared/` : composants/pipes/directives reutilisables, sans dependance a une feature.
 - `features/<feature>/` : pages d'une fonctionnalite + `<feature>.routes.ts` charge en lazy loading.
 
@@ -26,6 +27,8 @@ description: Regles pour coder dans frontend/ (Angular 20 standalone) - pages, c
 - Liste : signal `query` (filtre + page + tri) -> `toObservable` + `switchMap` -> `toSignal` ; filtres debounces 300 ms qui remettent la page a 0 ; recharger = `query.update(q => ({ ...q }))`.
 - Formulaire : route `:id/edit` lue par `input<string>()` (withComponentInputBinding) ; `fieldErrorMessage` dans `<mat-error>` ; `applyServerErrors` + `NotificationService.error` en cas d'echec.
 - Params HTTP : `toHttpParams` (ignore null/''). Confirmation : `confirmAction(dialog, {...})`.
+- Apercus de montants : `shared/utils/money.ts` (calculs en millimes) ; le backend reste la reference.
+- Saisie de paiements : `PaymentsEditor` + `createPaymentRow` ; motif obligatoire : `askReason(dialog, ...)`.
 - Dans `*matCellDef`, la variable est `any` : passer par une methode typee pour indexer un `Record`.
 
 ## Commandes

@@ -69,6 +69,16 @@ public class SupplierService {
         return supplierMapper.toResponse(supplier);
     }
 
+    /** Fournisseur actif, pour une operation (vente, achat) qui le reference. */
+    @Transactional(readOnly = true)
+    public Supplier getActiveEntity(Long id) {
+        Supplier entity = getEntity(id);
+        if (!entity.isActive()) {
+            throw new BusinessException("Fournisseur desactive : operation impossible");
+        }
+        return entity;
+    }
+
     private Supplier getEntity(Long id) {
         return supplierRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Fournisseur", id));

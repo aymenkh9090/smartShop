@@ -27,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
@@ -46,6 +47,9 @@ import java.util.Set;
 public class StockService {
 
     static final String DEFAULT_INVENTORY_REASON = "Inventaire";
+    static final String SALE_REASON = "Vente";
+    static final String PURCHASE_REASON = "Achat";
+    private static final int REASON_MAX_LENGTH = 255;
 
     private final ProductRepository productRepository;
     private final StockMovementRepository movementRepository;
@@ -58,8 +62,41 @@ public class StockService {
         Product product = lockProduct(request.productId());
         StockMovement movement = apply(product, request.type(), request.quantity(),
                 TextNormalizer.trimToNull(request.reason()), TextNormalizer.trimToNull(request.reference()),
-                request.unitsOrEmpty(), request.unitIdsOrEmpty());
+                request.unitsOrEmpty(), request.unitIdsOrEmpty(), ProductUnitStatus.REMOVED);
         return stockMapper.toResponse(movement);
+    }
+
+    // ------------------------------------------------------------------ appels internes (ventes, achats)
+    // Propagation MANDATORY : ces methodes s'executent dans la transaction de l'operation metier appelante,
+    // qui doit traiter ses produits par id croissant (ordre de verrouillage stable).
+
+    /** Sortie de stock d'une vente ; les unites designees passent a SOLD. */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public StockMovement recordSale(Long productId, int quantity, List<Long> unitIds, String saleReference) {
+        Product product = lockProduct(productId);
+        if (!product.isActive()) {
+            throw new BusinessException("Produit desactive : vente impossible (%s)".formatted(product.getName()));
+        }
+        return apply(product, StockMovementType.STOCK_OUT, quantity, SALE_REASON, saleReference,
+                List.of(), unitIds, ProductUnitStatus.SOLD);
+    }
+
+    /** Remise en stock lors de l'annulation d'une vente ; les unites vendues repassent en stock. */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public StockMovement recordSaleCancellation(Long productId, int quantity, List<Long> unitIds,
+                                                String saleReference, String cancelReason) {
+        String reason = "Annulation vente : " + cancelReason;
+        return apply(lockProduct(productId), StockMovementType.RETURN, quantity,
+                reason.length() > REASON_MAX_LENGTH ? reason.substring(0, REASON_MAX_LENGTH) : reason,
+                saleReference, List.of(), unitIds, ProductUnitStatus.SOLD);
+    }
+
+    /** Entree de stock d'un achat ; cree les unites des produits suivis. */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public StockMovement recordPurchase(Long productId, int quantity, List<ProductUnitRequest> units,
+                                        String purchaseReference) {
+        return apply(lockProduct(productId), StockMovementType.STOCK_IN, quantity, PURCHASE_REASON,
+                purchaseReference, units, List.of(), ProductUnitStatus.REMOVED);
     }
 
     /**
@@ -90,7 +127,7 @@ public class StockService {
             int difference = line.countedQuantity() - product.getQuantity();
             if (difference != 0) {
                 movements.add(apply(product, StockMovementType.ADJUSTMENT, difference, reason, reference,
-                        List.of(), List.of()));
+                        List.of(), List.of(), ProductUnitStatus.REMOVED));
             }
         }
         return new InventoryResponse(lines.size(), movements.size(),
@@ -118,8 +155,12 @@ public class StockService {
 
     // ------------------------------------------------------------------ regles metier
 
+    /**
+     * @param outgoingStatus statut donne aux unites qui sortent du stock (REMOVED, ou SOLD pour une vente)
+     */
     private StockMovement apply(Product product, StockMovementType type, int quantity, String reason,
-                                String reference, List<ProductUnitRequest> newUnits, List<Long> unitIds) {
+                                String reference, List<ProductUnitRequest> newUnits, List<Long> unitIds,
+                                ProductUnitStatus outgoingStatus) {
         int delta = signedDelta(type, quantity);
         if (type != StockMovementType.STOCK_IN && reason == null) {
             throw badRequest("Le motif est obligatoire pour ce type de mouvement");
@@ -128,7 +169,7 @@ public class StockService {
             throw new BusinessException("Produit desactive : entree en stock impossible");
         }
         List<ProductUnit> units = product.isSerialTracked()
-                ? resolveUnits(product, type, delta, newUnits, unitIds)
+                ? resolveUnits(product, type, delta, newUnits, unitIds, outgoingStatus)
                 : requireNoUnits(product, newUnits, unitIds);
         product.changeQuantity(delta);
         return movementRepository.save(new StockMovement(product, type, delta, reason, reference,
@@ -168,7 +209,8 @@ public class StockService {
      * Une entree cree les unites ; une sortie ou un retour designe des unites existantes.
      */
     private List<ProductUnit> resolveUnits(Product product, StockMovementType type, int delta,
-                                           List<ProductUnitRequest> newUnits, List<Long> unitIds) {
+                                           List<ProductUnitRequest> newUnits, List<Long> unitIds,
+                                           ProductUnitStatus outgoingStatus) {
         boolean createsUnits = delta > 0 && type != StockMovementType.RETURN;
         if (createsUnits) {
             if (!unitIds.isEmpty()) {
@@ -179,10 +221,10 @@ public class StockService {
         if (!newUnits.isEmpty()) {
             throw badRequest("Designer les unites existantes concernees avec 'unitIds'");
         }
-        // Sortie : unites en stock -> retirees. Retour : unites sorties -> remises en stock.
+        // Sortie : unites en stock -> outgoingStatus. Retour : unites sorties ou vendues -> remises en stock.
         boolean returning = delta > 0;
         return changeUnitsStatus(product, unitIds, Math.abs(delta),
-                returning ? ProductUnitStatus.IN_STOCK : ProductUnitStatus.REMOVED);
+                returning ? ProductUnitStatus.IN_STOCK : outgoingStatus);
     }
 
     private List<ProductUnit> createUnits(Product product, List<ProductUnitRequest> requests, int expected) {

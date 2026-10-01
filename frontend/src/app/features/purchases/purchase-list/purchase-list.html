@@ -1,0 +1,76 @@
+<div class="page-header">
+  <h2>Achats{{ supplierId() ? ' du fournisseur' : '' }}</h2>
+  <a mat-flat-button routerLink="/purchases/new"><mat-icon>add_shopping_cart</mat-icon> Nouvel achat</a>
+</div>
+
+<form class="filters" [formGroup]="filters">
+  <mat-form-field class="search">
+    <mat-label>Rechercher</mat-label>
+    <input matInput formControlName="q" placeholder="Reference, facture fournisseur, fournisseur..." />
+    <mat-icon matSuffix>search</mat-icon>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>Paiement</mat-label>
+    <mat-select formControlName="paymentStatus">
+      <mat-option [value]="null">Tous</mat-option>
+      @for (status of paymentStatuses; track status) {
+        <mat-option [value]="status">{{ paymentStatusLabels[status] }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>Periode</mat-label>
+    <mat-date-range-input [rangePicker]="picker">
+      <input matStartDate formControlName="from" placeholder="Du" />
+      <input matEndDate formControlName="to" placeholder="Au" />
+    </mat-date-range-input>
+    <mat-datepicker-toggle matIconSuffix [for]="picker" />
+    <mat-date-range-picker #picker />
+  </mat-form-field>
+</form>
+
+@if (loading()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+<div class="table-container">
+  <table mat-table [dataSource]="page().content">
+    <ng-container matColumnDef="createdAt">
+      <th mat-header-cell *matHeaderCellDef>Date</th>
+      <td mat-cell *matCellDef="let p">{{ p.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+    </ng-container>
+    <ng-container matColumnDef="reference">
+      <th mat-header-cell *matHeaderCellDef>Reference</th>
+      <td mat-cell *matCellDef="let p"><a [routerLink]="['/purchases', p.id]">{{ p.reference }}</a></td>
+    </ng-container>
+    <ng-container matColumnDef="supplier">
+      <th mat-header-cell *matHeaderCellDef>Fournisseur</th>
+      <td mat-cell *matCellDef="let p">{{ p.supplier.name }}</td>
+    </ng-container>
+    <ng-container matColumnDef="supplierInvoiceRef">
+      <th mat-header-cell *matHeaderCellDef>Facture</th>
+      <td mat-cell *matCellDef="let p">{{ p.supplierInvoiceRef }}</td>
+    </ng-container>
+    <ng-container matColumnDef="total">
+      <th mat-header-cell *matHeaderCellDef>Total</th>
+      <td mat-cell *matCellDef="let p">{{ p.total | currency: 'TND' : 'symbol' : '1.3-3' }}</td>
+    </ng-container>
+    <ng-container matColumnDef="amountDue">
+      <th mat-header-cell *matHeaderCellDef>Reste du</th>
+      <td mat-cell *matCellDef="let p">{{ p.amountDue | currency: 'TND' : 'symbol' : '1.3-3' }}</td>
+    </ng-container>
+    <ng-container matColumnDef="paymentStatus">
+      <th mat-header-cell *matHeaderCellDef>Paiement</th>
+      <td mat-cell *matCellDef="let p">
+        <span class="badge" [class.warn]="p.paymentStatus !== 'PAID'">{{ paymentStatusLabel(p.paymentStatus) }}</span>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="columns"></tr>
+    <tr mat-row *matRowDef="let row; columns: columns"></tr>
+    <tr class="mat-mdc-row" *matNoDataRow>
+      <td class="no-data" [attr.colspan]="columns.length">Aucun achat.</td>
+    </tr>
+  </table>
+  <mat-paginator [length]="page().totalElements" [pageIndex]="query().page" [pageSize]="query().size"
+                 [pageSizeOptions]="[10, 20, 50, 100]" (page)="onPage($event)" />
+</div>
