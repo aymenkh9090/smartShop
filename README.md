@@ -4,7 +4,7 @@ Application web de gestion pour une boutique de smartphones, récepteurs, abonne
 
 Elle centralise : stock, ventes, achats, clients, fournisseurs, crédits clients et fournisseurs, service après-vente (SAV) et tableau de bord.
 
-> État actuel : **Phase 1 – initialisation** terminée (socle backend, frontend et base de données). Voir `CLAUDE.md` pour la feuille de route.
+> État actuel : **Phase 2 – sécurité** terminée (utilisateurs, rôles, JWT, refresh tokens, login Angular). Voir `CLAUDE.md` pour la feuille de route.
 
 ## Architecture
 
@@ -71,6 +71,9 @@ openssl rand -base64 48   # -> JWT_SECRET
 | `JWT_REFRESH_TOKEN_TTL` | `7d` | Durée de vie du refresh token |
 | `SERVER_PORT` | `8080` | Port de l'API |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:4200` (dev) | Origines autorisées, séparées par des virgules |
+| `ADMIN_USERNAME` | `admin` | Compte administrateur initial |
+| `ADMIN_EMAIL` | `admin@smartshop.local` | Email de l'administrateur initial |
+| `ADMIN_PASSWORD` | — | Mot de passe de l'administrateur initial (≥ 8 caractères) |
 
 Le même `.env` est lu par Docker Compose et par le profil Spring `dev` (profil par défaut).
 Sans `DB_PASSWORD` ou `JWT_SECRET`, l'application refuse de démarrer.
@@ -104,6 +107,52 @@ cd frontend
 npm install
 npm start                  # http://localhost:4200
 ```
+
+## Authentification et rôles
+
+### Premier démarrage
+
+La création de comptes (`/api/auth/register`) est réservée aux ADMIN. Au démarrage, si la base ne contient **aucun utilisateur**, un compte ADMIN est créé à partir de `ADMIN_USERNAME` / `ADMIN_EMAIL` / `ADMIN_PASSWORD`. Sans `ADMIN_PASSWORD`, rien n'est créé (un avertissement est journalisé). Changer ensuite ce mot de passe.
+
+### Endpoints
+
+| Méthode | URL | Accès | Description |
+|---|---|---|---|
+| POST | `/api/auth/login` | public | `{username, password}` (username ou email) → access token, refresh token, utilisateur |
+| POST | `/api/auth/refresh` | public | `{refreshToken}` → nouvelle paire de tokens (rotation) |
+| POST | `/api/auth/logout` | public | `{refreshToken}` → 204, révoque le refresh token |
+| GET | `/api/auth/me` | authentifié | utilisateur courant |
+| POST | `/api/auth/register` | ADMIN | crée un utilisateur (`username, email, password, firstName, lastName, role`) |
+
+```bash
+curl -s -X POST localhost:8080/api/auth/login -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"<ADMIN_PASSWORD>"}'
+curl -s localhost:8080/api/auth/me -H "Authorization: Bearer <accessToken>"
+```
+
+### Fonctionnement des tokens
+
+- **Access token** : JWT HS256 valable 15 min (`JWT_ACCESS_TOKEN_TTL`), il porte le rôle.
+- **Refresh token** : valeur aléatoire opaque valable 7 jours, stockée uniquement sous forme d'empreinte SHA-256. Il est **à usage unique** : chaque refresh le remplace. Rejouer un token déjà utilisé révoque toutes les sessions de l'utilisateur (détection de vol).
+- Côté Angular, `AuthInterceptor` ajoute le token aux appels `/api`. Sur un 401, il tente un refresh puis rejoue la requête une fois ; si le refresh échoue, l'utilisateur est renvoyé vers `/login`. Les tokens sont stockés dans `localStorage`.
+
+### Rôles et permissions
+
+Hiérarchie : **ADMIN > MANAGER > SELLER / TECHNICIAN** (un rôle hérite des droits des rôles inférieurs).
+Matrice cible (appliquée avec `@PreAuthorize` au fil des phases) :
+
+| Module | ADMIN | MANAGER | SELLER | TECHNICIAN |
+|---|---|---|---|---|
+| Utilisateurs | ✅ gestion | — | — | — |
+| Catégories, produits | ✅ | ✅ gestion | lecture | lecture |
+| Stock (mouvements, inventaire) | ✅ | ✅ | lecture | sortie de pièces SAV |
+| Clients | ✅ | ✅ | ✅ | lecture |
+| Fournisseurs, achats | ✅ | ✅ | — | — |
+| Ventes | ✅ | ✅ (+ annulation) | ✅ création | — |
+| Crédits clients / paiements | ✅ | ✅ | ✅ encaissement | — |
+| Crédits fournisseurs | ✅ | ✅ | — | — |
+| SAV | ✅ | ✅ | création de tickets | ✅ diagnostic, réparation, statuts |
+| Tableau de bord | ✅ complet | ✅ complet | ventes du jour | SAV |
 
 ## Tests
 

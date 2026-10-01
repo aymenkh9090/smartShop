@@ -10,7 +10,12 @@ description: Regles de securite SmartShop - authentification JWT, roles, autoris
 - Mots de passe : `PasswordEncoder` (BCrypt) uniquement. Jamais loggues, jamais renvoyes dans un DTO.
 - Roles : `ADMIN`, `MANAGER`, `SELLER`, `TECHNICIAN`. Definir la matrice de permissions avant d'ecrire l'endpoint.
 - Autorisation : `@PreAuthorize` sur les controllers/services ; tout est `authenticated()` par defaut dans `SecurityConfig`.
-- Seuls `/api/auth/login`, `/api/auth/register`, `/api/auth/refresh` sont publics. Tout nouvel endpoint public doit etre justifie.
+- Seuls `POST /api/auth/login`, `/api/auth/refresh`, `/api/auth/logout` sont publics. `/api/auth/register` est reserve aux ADMIN. Tout nouvel endpoint public doit etre justifie.
+- Hierarchie (`SecurityConfig.roleHierarchy`) : ADMIN > MANAGER > SELLER / TECHNICIAN. Ecrire `hasRole('SELLER')` (pas la liste de tous les roles). Matrice cible dans le README.
+- Piege : `@Valid` s'execute AVANT `@PreAuthorize`. Pour un endpoint sensible, ajouter aussi la regle dans `authorizeHttpRequests` afin qu'un non-autorise recoive 403 et non un detail de validation.
+- Refresh tokens : opaques, stockes hashes (SHA-256), a usage unique (rotation) ; rejouer un token revoque revoque toutes les sessions de l'utilisateur.
+- Premier ADMIN : cree au demarrage via `ADMIN_PASSWORD` si la base est vide. Jamais de compte ou mot de passe dans une migration.
+- Frontend : `AuthService` / `authInterceptor` / `authGuard` (`data: { roles: [...] }`) dans `core/`.
 - Erreurs 401/403 au format `ApiError` (`JsonAuthenticationEntryPoint`), sans detail interne.
 - Secrets : uniquement via variables d'environnement / `.env` (non versionne). Mettre a jour `.env.example` sans valeur reelle.
 - CORS : origines explicites via `CORS_ALLOWED_ORIGINS`, jamais `*`.

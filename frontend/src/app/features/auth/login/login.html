@@ -1,0 +1,25 @@
+<section class="login">
+  <h2>Connexion</h2>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <label for="username">Nom d'utilisateur ou email</label>
+    <input id="username" type="text" formControlName="username" autocomplete="username" />
+    @if (form.controls.username.touched && form.controls.username.invalid) {
+      <small class="field-error">Champ obligatoire.</small>
+    }
+
+    <label for="password">Mot de passe</label>
+    <input id="password" type="password" formControlName="password" autocomplete="current-password" />
+    @if (form.controls.password.touched && form.controls.password.invalid) {
+      <small class="field-error">Champ obligatoire.</small>
+    }
+
+    @if (errorMessage(); as message) {
+      <p class="form-error" role="alert">{{ message }}</p>
+    }
+
+    <button type="submit" [disabled]="submitting()">
+      {{ submitting() ? 'Connexion...' : 'Se connecter' }}
+    </button>
+  </form>
+</section>
