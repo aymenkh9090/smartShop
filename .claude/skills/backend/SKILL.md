@@ -21,6 +21,9 @@ description: Regles pour coder dans backend/ (Spring Boot 4, Java 21) - nouvelle
 - Methodes internes appelees par une autre operation metier : `@Transactional(propagation = MANDATORY)` (ex. `StockService.recordSale`) pour garantir qu'elles s'executent dans la transaction de l'appelant.
 - Agregats (Sale, Purchase) : les montants sont calcules et verifies par l'entite (`complete()`), jamais saisis par le client ; montants via `Money` (3 decimales, HALF_UP).
 - Tester l'atomicite avec un echec sur une ligne traitee APRES une ligne reussie (sinon le rollback n'est pas reellement teste).
+- Credits : jamais de colonne "reste du" modifiable ; toujours recalcule depuis les paiements dans l'agregat (`receivePayment` / `makePayment`, sous verrou). Statut `CreditStatus.of(...)` en Java ET en Specification SQL : garder les deux coherents (test parametre par statut).
+- Date du jour metier (echeances) : `BusinessCalendar.today()` (fuseau Africa/Tunis), jamais `LocalDate.now()`.
+- Verifier un test de concurrence en retirant temporairement le verrou : il doit echouer.
 - Plusieurs verrous dans une transaction : verrouiller dans un ordre stable (ex. par id croissant) pour eviter les interblocages.
 - Auteur d'une operation : `CurrentUserProvider.currentUser()` (claim `uid` du JWT).
 - Config : `application.yml` + profils ; tout secret via `${VARIABLE}` sans valeur par defaut.

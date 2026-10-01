@@ -71,6 +71,10 @@ public class Purchase {
     @Column(name = "due_date")
     private LocalDate dueDate;
 
+    /** Achat non solde a sa creation : credit fournisseur (historique) meme une fois regle. */
+    @Column(name = "on_credit", nullable = false, updatable = false)
+    private boolean onCredit;
+
     @Column(length = 1000)
     private String notes;
 
@@ -122,6 +126,33 @@ public class Purchase {
         }
         paymentStatus = PaymentStatus.of(total, amountPaid);
         dueDate = paymentStatus == PaymentStatus.PAID ? null : requestedDueDate;
+        onCredit = paymentStatus != PaymentStatus.PAID;
+    }
+
+    /** Paiement verse au fournisseur apres l'achat ; le reste du est recalcule a partir des paiements. */
+    public PurchasePayment makePayment(BigDecimal amount, PaymentMethod method, String reference, User user,
+                                       Instant paidAt) {
+        if (paymentStatus == PaymentStatus.PAID) {
+            throw new BusinessException("L'achat %s est deja solde".formatted(this.reference));
+        }
+        BigDecimal paid = Money.of(amount);
+        if (paid.compareTo(getAmountDue()) > 0) {
+            throw new BusinessException("Le paiement (%s) depasse le reste du (%s)".formatted(paid, getAmountDue()),
+                    HttpStatus.BAD_REQUEST);
+        }
+        PurchasePayment payment = new PurchasePayment(this, paid, method, reference, user, paidAt);
+        payments.add(payment);
+        amountPaid = amountPaid.add(paid);
+        paymentStatus = PaymentStatus.of(total, amountPaid);
+        return payment;
+    }
+
+    /** Reporte (ou supprime) l'echeance d'un credit fournisseur non solde. */
+    public void reschedule(LocalDate newDueDate) {
+        if (paymentStatus == PaymentStatus.PAID) {
+            throw new BusinessException("Seul un credit en cours peut etre reporte");
+        }
+        dueDate = newDueDate;
     }
 
     public BigDecimal getAmountDue() {

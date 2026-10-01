@@ -4,7 +4,7 @@ Application web de gestion pour une boutique de smartphones, récepteurs, abonne
 
 Elle centralise : stock, ventes, achats, clients, fournisseurs, crédits clients et fournisseurs, service après-vente (SAV) et tableau de bord.
 
-> État actuel : **Phase 5 – achats et ventes** terminée (ventes comptant ou à crédit, achats fournisseurs, paiements, annulation). Voir `CLAUDE.md` pour la feuille de route.
+> État actuel : **Phase 6 – crédits** terminée (crédits clients et fournisseurs, paiements ultérieurs, échéances, soldes). Voir `CLAUDE.md` pour la feuille de route.
 
 ## Architecture
 
@@ -224,6 +224,26 @@ Matrice cible (appliquée avec `@PreAuthorize` au fil des phases) :
 - **Annulation** : le stock est restitué (mouvements `RETURN`), les IMEI repassent en stock, et la vente reste dans l'historique avec le statut `CANCELLED`. Les remboursements éventuels ne sont pas encore gérés par l'application.
 - **Achat** : alimente le stock (création des IMEI) et met à jour le **dernier prix d'achat** du produit. Un reste dû constitue un crédit fournisseur.
 - **Références** : `V-AAAA-NNNNNN` et `A-AAAA-NNNNNN`, générées par séquence PostgreSQL. Une opération refusée consomme quand même un numéro, la numérotation peut donc présenter des trous.
+
+## Crédits (phase 6)
+
+| Méthode | URL | Accès | Description |
+|---|---|---|---|
+| GET | `/api/customer-credits` | SELLER | crédits clients (`q`, `customerId`, `status`, `open=true` pour les non soldés) |
+| GET | `/api/customer-credits/balances` | SELLER | solde par client : encours, part en retard, prochaine échéance (`customerId` facultatif) |
+| GET | `/api/customer-credits/{saleId}` | SELLER | détail et historique des paiements |
+| POST | `/api/customer-credits/{saleId}/payments` | SELLER | encaissement (`amount`, `method`, `reference`) |
+| PATCH | `/api/customer-credits/{saleId}/due-date` | MANAGER | report ou suppression de l'échéance |
+| GET, POST, PATCH | `/api/supplier-credits/...` | MANAGER | mêmes opérations pour les achats (`purchaseId`, `supplierId`) |
+
+**Règles :**
+- **Définition** : un crédit est une vente ou un achat **non soldé à sa création** (`on_credit`). Il reste visible une fois réglé, avec le statut `PAID`, ce qui conserve l'historique.
+- **Reste dû** : il n'est jamais modifié directement. C'est toujours `total - somme des paiements`, et chaque paiement est enregistré séparément et immuable (montant, moyen, référence, auteur, date).
+- **Statut calculé** : `CANCELLED` (vente annulée) > `PAID` > `OVERDUE` (échéance dépassée, la date du jour suivant le fuseau `Africa/Tunis`, paramétrable avec `smartshop.business-zone`) > `PARTIALLY_PAID` > `PENDING`. Le filtre SQL et le calcul Java sont testés pour chaque statut.
+- **Contrôles des paiements** :
+  - un paiement est refusé s'il dépasse le reste dû (400), ou si la vente est annulée ou déjà soldée (409) ;
+  - les paiements sont sérialisés par un verrou pessimiste ; un test de concurrence vérifie qu'aucun trop-perçu n'est possible.
+- **Soldes** (« solde » des clients et fournisseurs) : agrégation des crédits en cours, triée par encours décroissant. Les ventes annulées sont exclues.
 
 ## Tests
 

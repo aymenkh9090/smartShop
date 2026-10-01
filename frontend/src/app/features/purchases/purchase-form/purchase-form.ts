@@ -20,6 +20,7 @@ import { Router, RouterLink } from '@angular/router';
 import { map, startWith } from 'rxjs';
 
 import { NotificationService } from '../../../core/services/notification.service';
+import { toIsoDate } from '../../../shared/components/reschedule-dialog/reschedule-dialog';
 import { PaymentRow, PaymentsEditor } from '../../../shared/components/payments-editor/payments-editor';
 import { applyServerErrors, fieldErrorMessage } from '../../../shared/utils/form-errors';
 import { fromMillimes, lineAmount, sumAmounts, toMillimes } from '../../../shared/utils/money';
@@ -45,10 +46,6 @@ const identifierRequired = (group: AbstractControl): ValidationErrors | null => 
   return imei?.trim() || serialNumber?.trim() ? null : { identifierRequired: true };
 };
 
-function toIsoDate(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-}
 
 /**
  * Reception d'un achat fournisseur. Pour un produit suivi a l'unite, une ligne IMEI par article recu.

@@ -28,7 +28,9 @@ description: Regles pour coder dans frontend/ (Angular 20 standalone) - pages, c
 - Formulaire : route `:id/edit` lue par `input<string>()` (withComponentInputBinding) ; `fieldErrorMessage` dans `<mat-error>` ; `applyServerErrors` + `NotificationService.error` en cas d'echec.
 - Params HTTP : `toHttpParams` (ignore null/''). Confirmation : `confirmAction(dialog, {...})`.
 - Apercus de montants : `shared/utils/money.ts` (calculs en millimes) ; le backend reste la reference.
-- Saisie de paiements : `PaymentsEditor` + `createPaymentRow` ; motif obligatoire : `askReason(dialog, ...)`.
+- Saisie de paiements : `PaymentsEditor` + `createPaymentRow` ; motif obligatoire : `askReason(dialog, ...)` ; paiement ulterieur : `askPayment(...)` ; echeance : `askNewDueDate(...)`.
+- Dates "jour" (echeances) : `toIsoDate` / `fromIsoDate` (jamais `new Date('yyyy-MM-dd')`, interprete en UTC).
+- Tests : creer le composant DANS `fakeAsync` quand un `debounceTime` est teste ; appeler `fixture.detectChanges()` apres une action qui met a jour un signal lu par `toObservable`.
 - Dans `*matCellDef`, la variable est `any` : passer par une methode typee pour indexer un `Record`.
 
 ## Commandes

@@ -6,6 +6,7 @@ import { Role } from '../../../core/models/auth.models';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { Sale } from '../sale.models';
+import { CustomerCreditService } from '../../customer-credits/customer-credit.service';
 import { SaleService } from '../sale.service';
 import { SaleDetail } from './sale-detail';
 
@@ -50,6 +51,7 @@ describe('SaleDetail', () => {
       providers: [
         provideRouter([]),
         { provide: SaleService, useValue: { get: () => of(sale) } },
+        { provide: CustomerCreditService, useValue: jasmine.createSpyObj('CustomerCreditService', ['pay']) },
         { provide: NotificationService, useValue: jasmine.createSpyObj('NotificationService', ['success', 'error']) },
         { provide: AuthService, useValue: { hasAnyRole: (r: Role[]) => r.some((x) => roles.includes(x)) } },
       ],
@@ -76,5 +78,16 @@ describe('SaleDetail', () => {
     const cancelled = render(['MANAGER'], { ...SALE, status: 'CANCELLED', cancelReason: 'Erreur' });
     const buttons = (cancelled.nativeElement as HTMLElement).querySelectorAll('button');
     expect(Array.from(buttons).some((b) => b.textContent?.includes('Annuler la vente'))).toBeFalse();
+  });
+
+  it('offers to collect a payment only on a completed sale with a balance', () => {
+    const text = (fixture: ComponentFixture<SaleDetail>) => (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text(render(['SELLER']))).not.toContain('Encaisser');
+
+    TestBed.resetTestingModule();
+    expect(text(render(['SELLER'], { ...SALE, amountDue: 500, paymentStatus: 'PARTIALLY_PAID' }))).toContain('Encaisser');
+
+    TestBed.resetTestingModule();
+    expect(text(render(['SELLER'], { ...SALE, amountDue: 500, status: 'CANCELLED' }))).not.toContain('Encaisser');
   });
 });

@@ -44,6 +44,20 @@ export const routes: Routes = [
         loadChildren: () => import('./features/purchases/purchases.routes').then((m) => m.PURCHASE_ROUTES),
       },
       {
+        path: 'customer-credits',
+        canActivate: [authGuard],
+        data: { roles: ['SELLER'] },
+        loadChildren: () =>
+          import('./features/customer-credits/customer-credits.routes').then((m) => m.CUSTOMER_CREDIT_ROUTES),
+      },
+      {
+        path: 'supplier-credits',
+        canActivate: [authGuard],
+        data: { roles: ['MANAGER'] },
+        loadChildren: () =>
+          import('./features/supplier-credits/supplier-credits.routes').then((m) => m.SUPPLIER_CREDIT_ROUTES),
+      },
+      {
         path: 'customers',
         loadChildren: () => import('./features/customers/customers.routes').then((m) => m.CUSTOMER_ROUTES),
       },

@@ -13,6 +13,7 @@ import { Router, RouterLink } from '@angular/router';
 import { map, startWith } from 'rxjs';
 
 import { NotificationService } from '../../../core/services/notification.service';
+import { toIsoDate } from '../../../shared/components/reschedule-dialog/reschedule-dialog';
 import { PaymentRow, PaymentsEditor } from '../../../shared/components/payments-editor/payments-editor';
 import { fieldErrorMessage } from '../../../shared/utils/form-errors';
 import { fromMillimes, lineAmount, sumAmounts, toMillimes } from '../../../shared/utils/money';
@@ -31,11 +32,6 @@ type SaleLine = FormGroup<{
   unitIds: FormControl<number[]>;
 }>;
 
-/** Format ISO (yyyy-MM-dd) d'une date locale, sans decalage de fuseau. */
-function toIsoDate(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-}
 
 /**
  * Saisie d'une vente (caisse). Les montants affiches sont un apercu ; le backend recalcule et valide tout.

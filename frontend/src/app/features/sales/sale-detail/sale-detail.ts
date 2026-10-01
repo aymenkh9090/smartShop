@@ -6,10 +6,12 @@ import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
 import { filter, switchMap } from 'rxjs';
 
-import { PAYMENT_METHOD_LABELS, PAYMENT_STATUS_LABELS, PaymentMethod } from '../../../core/models/payment';
+import { PAYMENT_METHOD_LABELS, PAYMENT_STATUS_LABELS, PaymentMethod, PaymentRequest } from '../../../core/models/payment';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { askPayment } from '../../../shared/components/payment-dialog/payment-dialog';
 import { askReason } from '../../../shared/components/reason-dialog/reason-dialog';
+import { CustomerCreditService } from '../../customer-credits/customer-credit.service';
 import { SALE_STATUS_LABELS, Sale } from '../sale.models';
 import { SaleService } from '../sale.service';
 
@@ -25,12 +27,18 @@ export class SaleDetail implements OnInit {
   private readonly notifications = inject(NotificationService);
   private readonly dialog = inject(MatDialog);
   private readonly auth = inject(AuthService);
+  private readonly creditService = inject(CustomerCreditService);
 
   readonly id = input.required<string>();
 
   protected readonly sale = signal<Sale | null>(null);
   protected readonly paymentStatusLabels = PAYMENT_STATUS_LABELS;
   protected readonly saleStatusLabels = SALE_STATUS_LABELS;
+  /** Reglement d'une vente a credit (paiement ulterieur). */
+  protected readonly canReceivePayment = computed(() => {
+    const sale = this.sale();
+    return !!sale && sale.status === 'COMPLETED' && sale.amountDue > 0;
+  });
   protected readonly canCancel = computed(
     () => this.auth.hasAnyRole(['MANAGER']) && this.sale()?.status === 'COMPLETED',
   );
@@ -44,6 +52,26 @@ export class SaleDetail implements OnInit {
 
   protected methodLabel(method: PaymentMethod): string {
     return PAYMENT_METHOD_LABELS[method];
+  }
+
+  protected receivePayment(): void {
+    const sale = this.sale();
+    if (!sale) {
+      return;
+    }
+    askPayment(this.dialog, { title: `Encaisser - ${sale.reference}`, amountDue: sale.amountDue })
+      .pipe(
+        filter((payment): payment is PaymentRequest => !!payment),
+        switchMap((payment) => this.creditService.pay(sale.id, payment)),
+        switchMap(() => this.saleService.get(sale.id)),
+      )
+      .subscribe({
+        next: (updated) => {
+          this.sale.set(updated);
+          this.notifications.success('Paiement enregistre');
+        },
+        error: (error: unknown) => this.notifications.error(error),
+      });
   }
 
   protected cancel(): void {

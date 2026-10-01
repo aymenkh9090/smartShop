@@ -1,0 +1,57 @@
+@if (credit(); as c) {
+  <div class="page-header">
+    <h2>
+      Credit {{ c.reference }}
+      <span class="badge" [class.warn]="c.status === 'OVERDUE'" [class.muted]="c.status === 'PAID' || c.status === 'CANCELLED'">
+        {{ statusLabels[c.status] }}
+      </span>
+    </h2>
+    <div>
+      <a mat-button routerLink="/customer-credits"><mat-icon>arrow_back</mat-icon> Credits</a>
+      <a mat-button [routerLink]="['/sales', c.saleId]"><mat-icon>receipt_long</mat-icon> Voir la vente</a>
+      @if (canReschedule()) {
+        <button mat-stroked-button type="button" (click)="reschedule()"><mat-icon>event</mat-icon> Reporter l'echeance</button>
+      }
+      @if (isOpen()) {
+        <button mat-flat-button type="button" (click)="pay()"><mat-icon>payments</mat-icon> Encaisser</button>
+      }
+    </div>
+  </div>
+
+  <section class="form-card detail">
+    <dl class="info">
+      <dt>Client</dt>
+      <dd>{{ c.customer.lastName }} {{ c.customer.firstName }} - {{ c.customer.phone }}</dd>
+      <dt>Date de la vente</dt>
+      <dd>{{ c.createdAt | date: 'dd/MM/yyyy HH:mm' }} par {{ c.createdBy }}</dd>
+      <dt>Echeance</dt>
+      <dd>{{ c.dueDate ? (c.dueDate | date: 'dd/MM/yyyy') : 'Aucune' }}</dd>
+    </dl>
+
+    <dl class="totals">
+      <dt>Montant total</dt><dd>{{ c.total | currency: 'TND' : 'symbol' : '1.3-3' }}</dd>
+      <dt>Deja paye</dt><dd>{{ c.amountPaid | currency: 'TND' : 'symbol' : '1.3-3' }}</dd>
+      <dt>Reste du</dt><dd class="grand-total" [class.due]="c.amountDue > 0">{{ c.amountDue | currency: 'TND' : 'symbol' : '1.3-3' }}</dd>
+    </dl>
+
+    <h3>Historique des paiements</h3>
+    @if (c.payments.length) {
+      <table class="detail-table">
+        <thead><tr><th>Date</th><th>Moyen</th><th>Reference</th><th>Par</th><th class="amount">Montant</th></tr></thead>
+        <tbody>
+          @for (payment of c.payments; track payment.id) {
+            <tr>
+              <td>{{ payment.paidAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+              <td>{{ methodLabel(payment.method) }}</td>
+              <td>{{ payment.reference }}</td>
+              <td>{{ payment.createdBy }}</td>
+              <td class="amount">{{ payment.amount | currency: 'TND' : 'symbol' : '1.3-3' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    } @else {
+      <p class="no-data">Aucun paiement.</p>
+    }
+  </section>
+}

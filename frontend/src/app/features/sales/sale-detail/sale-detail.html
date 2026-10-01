@@ -6,6 +6,9 @@
     </h2>
     <div>
       <a mat-button routerLink="/sales"><mat-icon>arrow_back</mat-icon> Ventes</a>
+      @if (canReceivePayment()) {
+        <button mat-flat-button type="button" (click)="receivePayment()"><mat-icon>payments</mat-icon> Encaisser</button>
+      }
       @if (canCancel()) {
         <button mat-stroked-button type="button" (click)="cancel()"><mat-icon>undo</mat-icon> Annuler la vente</button>
       }

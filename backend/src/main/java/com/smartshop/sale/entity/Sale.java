@@ -79,6 +79,10 @@ public class Sale {
     @Column(name = "due_date")
     private LocalDate dueDate;
 
+    /** Vente non soldee a sa creation : reste un credit (historique) meme une fois reglee. */
+    @Column(name = "on_credit", nullable = false, updatable = false)
+    private boolean onCredit;
+
     @Column(length = 1000)
     private String notes;
 
@@ -152,6 +156,38 @@ public class Sale {
             throw invalid("Une vente a credit (reste a payer %s) necessite un client".formatted(getAmountDue()));
         }
         dueDate = paymentStatus == PaymentStatus.PAID ? null : requestedDueDate;
+        onCredit = paymentStatus != PaymentStatus.PAID;
+    }
+
+    /**
+     * Paiement recu apres la vente (reglement d'un credit). Le reste du est recalcule a partir
+     * de l'ensemble des paiements, jamais modifie directement.
+     */
+    public SalePayment receivePayment(BigDecimal amount, PaymentMethod method, String reference, User user,
+                                      Instant paidAt) {
+        if (isCancelled()) {
+            throw new BusinessException("La vente %s est annulee : paiement impossible".formatted(this.reference));
+        }
+        if (paymentStatus == PaymentStatus.PAID) {
+            throw new BusinessException("La vente %s est deja soldee".formatted(this.reference));
+        }
+        BigDecimal paid = Money.of(amount);
+        if (paid.compareTo(getAmountDue()) > 0) {
+            throw invalid("Le paiement (%s) depasse le reste du (%s)".formatted(paid, getAmountDue()));
+        }
+        SalePayment payment = new SalePayment(this, paid, method, reference, user, paidAt);
+        payments.add(payment);
+        amountPaid = amountPaid.add(paid);
+        paymentStatus = PaymentStatus.of(total, amountPaid);
+        return payment;
+    }
+
+    /** Reporte (ou supprime) l'echeance d'un credit non solde. */
+    public void reschedule(LocalDate newDueDate) {
+        if (isCancelled() || paymentStatus == PaymentStatus.PAID) {
+            throw new BusinessException("Seul un credit en cours peut etre reporte");
+        }
+        dueDate = newDueDate;
     }
 
     public BigDecimal getAmountDue() {

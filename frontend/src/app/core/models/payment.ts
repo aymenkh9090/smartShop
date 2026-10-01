@@ -31,3 +31,15 @@ export interface Payment {
   paidAt: string;
   createdBy: string;
 }
+
+/** Statut d'un credit, calcule par le backend (paiements + echeance). */
+export type CreditStatus = 'PENDING' | 'PARTIALLY_PAID' | 'PAID' | 'OVERDUE' | 'CANCELLED';
+
+export const CREDIT_STATUS_LABELS: Record<CreditStatus, string> = {
+  PENDING: 'En attente',
+  PARTIALLY_PAID: 'Partiellement paye',
+  PAID: 'Solde',
+  OVERDUE: 'En retard',
+  CANCELLED: 'Annule',
+};
+export const CREDIT_STATUSES = Object.keys(CREDIT_STATUS_LABELS) as CreditStatus[];

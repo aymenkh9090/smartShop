@@ -102,4 +102,65 @@ class SaleTest {
         product.setWarrantyMonths(warrantyMonths);
         return product;
     }
+
+    @Test
+    void laterPayments_settleTheCredit_keepingTheCreditFlag() {
+        Sale sale = creditSale("800", "300");
+        assertThat(sale.isOnCredit()).isTrue();
+
+        sale.receivePayment(new BigDecimal("200"), PaymentMethod.CARD, null, SELLER, Instant.now());
+        assertThat(sale.getAmountDue()).isEqualByComparingTo("300");
+        assertThat(sale.getPaymentStatus()).isEqualTo(PaymentStatus.PARTIALLY_PAID);
+
+        sale.receivePayment(new BigDecimal("300"), PaymentMethod.CASH, null, SELLER, Instant.now());
+        assertThat(sale.getPaymentStatus()).isEqualTo(PaymentStatus.PAID);
+        assertThat(sale.getPayments()).hasSize(3);
+        assertThat(sale.isOnCredit()).as("reste un credit dans l'historique").isTrue();
+    }
+
+    @Test
+    void laterPayment_cannotExceedTheBalance_norTargetASettledOrCancelledSale() {
+        Sale sale = creditSale("800", "300");
+        assertThatThrownBy(() -> sale.receivePayment(new BigDecimal("500.001"), PaymentMethod.CASH, null, SELLER,
+                Instant.now())).hasMessageContaining("depasse le reste du");
+
+        sale.receivePayment(new BigDecimal("500"), PaymentMethod.CASH, null, SELLER, Instant.now());
+        assertThatThrownBy(() -> sale.receivePayment(BigDecimal.ONE, PaymentMethod.CASH, null, SELLER, Instant.now()))
+                .hasMessageContaining("deja soldee");
+
+        Sale cancelled = creditSale("800", "0");
+        cancelled.cancel(SELLER, Instant.now(), "Erreur");
+        assertThatThrownBy(() -> cancelled.receivePayment(BigDecimal.ONE, PaymentMethod.CASH, null, SELLER,
+                Instant.now())).hasMessageContaining("annulee");
+    }
+
+    @Test
+    void cashSale_isNotACredit() {
+        Sale sale = new Sale("V-1", null, SELLER, null);
+        sale.addItem(product("100", null), 1, List.of());
+        sale.addPayment(new BigDecimal("100"), PaymentMethod.CASH, null, SELLER, Instant.now());
+        sale.complete(null, null);
+
+        assertThat(sale.isOnCredit()).isFalse();
+    }
+
+    @Test
+    void reschedule_onlyForOpenCredits() {
+        Sale sale = creditSale("800", "300");
+        sale.reschedule(DUE.plusMonths(1));
+        assertThat(sale.getDueDate()).isEqualTo(DUE.plusMonths(1));
+
+        sale.receivePayment(new BigDecimal("500"), PaymentMethod.CASH, null, SELLER, Instant.now());
+        assertThatThrownBy(() -> sale.reschedule(DUE)).isInstanceOf(BusinessException.class);
+    }
+
+    private static Sale creditSale(String price, String paid) {
+        Sale sale = new Sale("V-1", new Customer(), SELLER, null);
+        sale.addItem(product(price, null), 1, List.of());
+        if (new BigDecimal(paid).signum() > 0) {
+            sale.addPayment(new BigDecimal(paid), PaymentMethod.CASH, null, SELLER, Instant.now());
+        }
+        sale.complete(null, DUE);
+        return sale;
+    }
 }
