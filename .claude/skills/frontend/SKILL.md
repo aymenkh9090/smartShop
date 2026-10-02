@@ -38,5 +38,11 @@ description: Regles pour coder dans frontend/ (Angular 20 standalone) - pages, c
 - Boutons de workflow generes depuis `nextStatuses` renvoye par le backend (pas de duplication des transitions cote Angular).
 - Spec d'un composant qui embarque un picker : fournir aussi `ProductService` / `CustomerService` mockes.
 
+## Patterns etablis (phase 8)
+- Graphiques : Chart.js via ng2-charts 9 (Angular 20 ; ng2-charts >= 10 exige Angular 21+). Enregistrer uniquement les elements utilises (`provideCharts({ registerables: [...] })`) dans le composant graphique, pas globalement.
+- Lire le skill `dataviz` avant tout graphique : serie unique = slot 1 `#2a78d6`, colonnes <= 24px, extremite arrondie 4px, grille discrete, infobulle au survol, tableau des valeurs (`<details>`) pour l'accessibilite. Valider les couleurs avec son script.
+- Grilles responsives : `minmax(min(220px, 100%), 1fr)` pour ne jamais deborder en largeur etroite.
+- Sections pilotees par le backend (null = non autorise) : le template affiche simplement les sections presentes, sans dupliquer la matrice des roles.
+
 ## Commandes
 - `npm start`, `npm run build`, `npm run test:ci`.

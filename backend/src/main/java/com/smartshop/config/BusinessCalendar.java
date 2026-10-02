@@ -26,6 +26,15 @@ public class BusinessCalendar {
         return LocalDate.now(clock.withZone(zone));
     }
 
+    public ZoneId zone() {
+        return zone;
+    }
+
+    /** Debut (00:00, heure de la boutique) d'une journee : borne des periodes statistiques. */
+    public Instant startOf(LocalDate date) {
+        return date.atStartOfDay(zone).toInstant();
+    }
+
     /** Date locale (Tunisie) d'un instant. */
     public LocalDate dateOf(Instant instant) {
         return LocalDate.ofInstant(instant, zone);

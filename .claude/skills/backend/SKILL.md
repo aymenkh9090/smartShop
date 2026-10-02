@@ -47,5 +47,10 @@ description: Regles pour coder dans backend/ (Spring Boot 4, Java 21) - nouvelle
 - Elements ajoutes a un agregat existant (pieces, paiements) : `repository.flush()` avant le mapping, sinon leur id est null dans la reponse.
 - Date locale d'un instant : `BusinessCalendar.dateOf(instant)`.
 
+## Patterns etablis (phase 8)
+- Statistiques : repository dedie (`DashboardRepository`, `EntityManager`) avec des requetes d'agregation ; periodes `[from, to[` calculees par `BusinessCalendar.startOf(date)` ; regroupement par jour local en SQL natif (`created_at at time zone :zone`).
+- Contenu selon le role dans le service : `RoleHierarchy.getReachableGrantedAuthorities` (ne pas reimplementer la hierarchie) ; section non autorisee = null, jamais calculee.
+- Tests de dates relatives au jour courant : antidater avec `calendar.startOf(jour).plusSeconds(3600)` (jamais d'arithmetique d'intervalle SQL en UTC).
+
 ## Commandes
 - `./mvnw test` (Docker requis pour Testcontainers), `./mvnw verify` (+ rapport JaCoCo `target/site/jacoco`).

@@ -1,0 +1,188 @@
+<div class="page-header">
+  <h2>Tableau de bord</h2>
+  @if (data(); as d) {
+    <span class="date">{{ d.date | date: 'EEEE d MMMM y' }}</span>
+  }
+</div>
+
+@switch (state().status) {
+  @case ('loading') {
+    <mat-progress-bar mode="indeterminate" />
+  }
+  @case ('error') {
+    <p class="no-data">Le tableau de bord n'a pas pu etre charge.</p>
+  }
+}
+
+@if (data(); as d) {
+  <section class="kpis" aria-label="Indicateurs">
+    @if (d.todaySales; as s) {
+      <a class="tile" routerLink="/sales">
+        <span class="label">Ventes du jour</span>
+        <span class="value">{{ s.amount | currency: 'TND' : 'symbol' : '1.3-3' }}</span>
+        <span class="detail">{{ s.count }} vente(s)</span>
+      </a>
+    }
+    @if (d.monthSales; as m) {
+      <a class="tile" routerLink="/sales">
+        <span class="label">CA du mois</span>
+        <span class="value">{{ m.amount | currency: 'TND' : 'symbol' : '1.3-3' }}</span>
+        <span class="detail">
+          {{ m.count }} vente(s)
+          @if (monthTrend(); as trend) {
+            · <mat-icon class="trend" aria-hidden="true">{{ trend >= 0 ? 'trending_up' : 'trending_down' }}</mat-icon>
+            {{ trend >= 0 ? '+' : '' }}{{ trend | percent: '1.0-0' }} vs mois dernier a date
+          } @else {
+            · mois dernier a date : {{ m.previousAmount | currency: 'TND' : 'symbol' : '1.3-3' }}
+          }
+        </span>
+      </a>
+    }
+    @if (d.monthAfterSales; as a) {
+      <a class="tile" routerLink="/after-sales">
+        <span class="label">CA SAV du mois</span>
+        <span class="value">{{ a.amount | currency: 'TND' : 'symbol' : '1.3-3' }}</span>
+        <span class="detail">{{ a.count }} ticket(s) livre(s)</span>
+      </a>
+    }
+    @if (d.monthPurchases; as p) {
+      <a class="tile" routerLink="/purchases">
+        <span class="label">Achats du mois</span>
+        <span class="value">{{ p.amount | currency: 'TND' : 'symbol' : '1.3-3' }}</span>
+        <span class="detail">{{ p.count }} achat(s)</span>
+      </a>
+    }
+    @if (d.customerCredits; as c) {
+      <a class="tile" routerLink="/customer-credits">
+        <span class="label">Credits clients</span>
+        <span class="value">{{ c.outstanding | currency: 'TND' : 'symbol' : '1.3-3' }}</span>
+        <span class="detail" [class.alert]="c.overdue > 0">
+          @if (c.overdue > 0) {
+            <mat-icon class="trend" aria-hidden="true">warning</mat-icon>
+          }
+          {{ c.overdue | currency: 'TND' : 'symbol' : '1.3-3' }} en retard · {{ c.count }} credit(s)
+        </span>
+      </a>
+    }
+    @if (d.supplierCredits; as c) {
+      <a class="tile" routerLink="/supplier-credits">
+        <span class="label">Credits fournisseurs</span>
+        <span class="value">{{ c.outstanding | currency: 'TND' : 'symbol' : '1.3-3' }}</span>
+        <span class="detail" [class.alert]="c.overdue > 0">
+          @if (c.overdue > 0) {
+            <mat-icon class="trend" aria-hidden="true">warning</mat-icon>
+          }
+          {{ c.overdue | currency: 'TND' : 'symbol' : '1.3-3' }} en retard · {{ c.count }} credit(s)
+        </span>
+      </a>
+    }
+    @if (d.afterSales; as a) {
+      <a class="tile" routerLink="/after-sales">
+        <span class="label">SAV en cours</span>
+        <span class="value">{{ a.openCount }}</span>
+        <span class="detail">{{ statusCount(a.byStatus, 'READY') }} pret(s) a livrer</span>
+      </a>
+    }
+    @if (d.lowStock; as l) {
+      <a class="tile" routerLink="/products" [queryParams]="{ lowStock: true }">
+        <span class="label">Stock faible</span>
+        <span class="value">{{ l.count }}</span>
+        <span class="detail" [class.alert]="l.count > 0">
+          @if (l.count > 0) {
+            <mat-icon class="trend" aria-hidden="true">warning</mat-icon>
+          }
+          produit(s) sous le seuil
+        </span>
+      </a>
+    }
+  </section>
+
+  @if (d.dailyRevenue; as days) {
+    <section class="form-card panel">
+      <h3>CA des ventes - 30 derniers jours</h3>
+      <app-revenue-chart [days]="days" />
+    </section>
+  }
+
+  <div class="panels">
+    @if (d.topProducts; as products) {
+      <section class="form-card panel">
+        <h3>Produits les plus vendus du mois</h3>
+        @if (products.length) {
+          <table class="detail-table">
+            <thead><tr><th>Produit</th><th class="amount">Quantite</th><th class="amount">CA</th></tr></thead>
+            <tbody>
+              @for (p of products; track p.productId) {
+                <tr>
+                  <td>{{ p.name }} <div class="mat-caption">{{ p.sku }}</div></td>
+                  <td class="amount">{{ p.quantity }}</td>
+                  <td class="amount">{{ p.revenue | currency: 'TND' : 'symbol' : '1.3-3' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        } @else {
+          <p class="no-data">Aucune vente ce mois-ci.</p>
+        }
+      </section>
+    }
+
+    @if (d.afterSales; as a) {
+      <section class="form-card panel">
+        <h3>SAV</h3>
+        <ul class="status-counts">
+          @for (status of openStatuses; track status) {
+            <li>
+              <a routerLink="/after-sales" [queryParams]="{ status }">{{ statusLabels[status] }}</a>
+              <strong>{{ statusCount(a.byStatus, status) }}</strong>
+            </li>
+          }
+        </ul>
+        <h4>Prets a livrer</h4>
+        @if (a.ready.length) {
+          <table class="detail-table">
+            <tbody>
+              @for (t of a.ready; track t.id) {
+                <tr>
+                  <td class="nowrap"><a [routerLink]="['/after-sales', t.id]">{{ t.ticketNumber }}</a></td>
+                  <td>
+                    {{ t.deviceDescription }}
+                    <div class="mat-caption">{{ t.customerName }} - {{ t.customerPhone }}</div>
+                  </td>
+                  <td class="amount">{{ t.amountDue | currency: 'TND' : 'symbol' : '1.3-3' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        } @else {
+          <p class="no-data">Aucun appareil pret.</p>
+        }
+      </section>
+    }
+
+    @if (d.lowStock; as l) {
+      <section class="form-card panel">
+        <h3>Stock faible</h3>
+        @if (l.products.length) {
+          <table class="detail-table">
+            <thead><tr><th>Produit</th><th class="amount">Stock</th><th class="amount">Seuil</th></tr></thead>
+            <tbody>
+              @for (p of l.products; track p.id) {
+                <tr>
+                  <td>{{ p.name }} <div class="mat-caption">{{ p.sku }}</div></td>
+                  <td class="amount">{{ p.quantity }}</td>
+                  <td class="amount">{{ p.minStock }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+          @if (l.count > l.products.length) {
+            <a mat-button routerLink="/products" [queryParams]="{ lowStock: true }">Voir les {{ l.count }} produits</a>
+          }
+        } @else {
+          <p class="no-data">Aucun produit sous le seuil.</p>
+        }
+      </section>
+    }
+  </div>
+}

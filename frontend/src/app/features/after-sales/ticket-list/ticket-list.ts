@@ -61,6 +61,8 @@ export class TicketList implements OnInit {
 
   /** Tickets d'un client (?customerId=), ex. depuis la liste des clients. */
   readonly customerId = input(undefined, { transform: numberAttribute });
+  /** Statut initial (?status=READY), ex. depuis le tableau de bord. */
+  readonly status = input<AfterSalesStatus>();
 
   protected readonly statuses = AFTER_SALES_STATUSES;
   protected readonly statusLabels = AFTER_SALES_STATUS_LABELS;
@@ -109,6 +111,10 @@ export class TicketList implements OnInit {
   }
 
   ngOnInit(): void {
+    const status = this.status();
+    if (status && AFTER_SALES_STATUSES.includes(status)) {
+      this.filters.controls.status.setValue(status, { emitEvent: false });
+    }
     this.query.update((query) => ({ ...query, filter: this.toFilter() }));
   }
 

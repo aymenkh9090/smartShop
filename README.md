@@ -4,7 +4,7 @@ Application web de gestion pour une boutique de smartphones, récepteurs, abonne
 
 Elle centralise : stock, ventes, achats, clients, fournisseurs, crédits clients et fournisseurs, service après-vente (SAV) et tableau de bord.
 
-> État actuel : **Phase 7 – SAV** terminée (tickets, workflow de réparation, pièces sorties du stock, garantie, paiements et livraison). Voir `CLAUDE.md` pour la feuille de route.
+> État actuel : **Phase 8 – tableau de bord** terminée (indicateurs par rôle, CA, crédits, stock faible, SAV, produits les plus vendus, graphique du CA). Voir `CLAUDE.md` pour la feuille de route.
 
 ## Architecture
 
@@ -37,7 +37,7 @@ Angular 20  --HTTP/JSON-->  Spring Boot REST API (JWT)  -->  JPA/Hibernate  --> 
 |---|---|
 | Backend | Java 21, Spring Boot 4.1, Spring Web MVC, Spring Data JPA / Hibernate, Spring Security, JWT (OAuth2 Resource Server / Nimbus), Bean Validation, Lombok, Flyway, Maven |
 | Tests backend | JUnit 5, Mockito, Spring Boot Test, Testcontainers (PostgreSQL), JaCoCo |
-| Frontend | Angular 20 (standalone), Angular Material 20, TypeScript, Router, HttpClient, Reactive Forms, RxJS, Signals |
+| Frontend | Angular 20 (standalone), Angular Material 20, Chart.js 4 / ng2-charts 9, TypeScript, Router, HttpClient, Reactive Forms, RxJS, Signals |
 | Base de données | PostgreSQL 17 |
 | Infra | Docker, Docker Compose |
 
@@ -152,7 +152,7 @@ Matrice cible (appliquée avec `@PreAuthorize` au fil des phases) :
 | Crédits clients / paiements | ✅ | ✅ | ✅ encaissement | — |
 | Crédits fournisseurs | ✅ | ✅ | — | — |
 | SAV | ✅ | ✅ (+ assignation, annulation) | réception, encaissement, livraison | diagnostic, pièces, statuts |
-| Tableau de bord | ✅ complet | ✅ complet | ventes du jour | SAV |
+| Tableau de bord | ✅ complet | ✅ complet | ventes du jour, stock faible, SAV | SAV, stock faible |
 
 ## Référentiel (phase 3)
 
@@ -274,6 +274,31 @@ Matrice cible (appliquée avec `@PreAuthorize` au fil des phases) :
 - **Concurrence** : toutes les écritures verrouillent le ticket (verrou pessimiste, puis les produits) ; un test vérifie qu'aucun trop-perçu n'est possible.
 - **Annulation** : les paiements restent dans l'historique. Les remboursements ne sont pas encore gérés par l'application.
 - **Numérotation** : `SAV-AAAA-NNNNNN` (séquence PostgreSQL).
+
+## Tableau de bord (phase 8)
+
+| Méthode | URL | Accès | Description |
+|---|---|---|---|
+| GET | `/api/dashboard` | authentifié | indicateurs ; le contenu dépend du rôle |
+
+| Section | Rôles | Contenu |
+|---|---|---|
+| `todaySales` | SELLER | nombre et CA des ventes du jour |
+| `monthSales` | MANAGER | CA du mois en cours et CA de la même période du mois précédent (du 1er au même jour) |
+| `monthPurchases` | MANAGER | achats du mois |
+| `monthAfterSales` | MANAGER | CA SAV du mois : tickets livrés, montant facturé (nul sous garantie) |
+| `customerCredits`, `supplierCredits` | MANAGER | encours, part en retard, nombre de crédits ouverts |
+| `topProducts` | MANAGER | 5 produits les plus vendus du mois (quantité, CA) |
+| `dailyRevenue` | MANAGER | CA des ventes par jour sur 30 jours, jours sans vente inclus |
+| `afterSales` | SELLER, TECHNICIAN | tickets en cours par statut, 10 tickets prêts à livrer |
+| `lowStock` | tous | nombre de produits actifs sous le seuil, les 5 plus critiques |
+
+**Règles :**
+- **Filtrage côté serveur** : une section non autorisée vaut `null`. Elle n'est ni calculée ni exposée. La hiérarchie des rôles s'applique (ADMIN voit tout).
+- **CA** : total des ventes non annulées, après remise, par date de vente. Le CA SAV est distinct.
+- **Périodes** : « jour » et « mois » suivent le fuseau de la boutique (`Africa/Tunis`). Par exemple, une vente faite à 00h30 heure de Tunis compte pour ce jour-là, même s'il est encore 23h30 la veille en UTC.
+- **Calcul** : agrégations SQL (`count`, `sum`, `group by`), sans charger les entités.
+- **Frontend** : les cartes renvoient vers les modules (`/products?lowStock=true`, `/after-sales?status=READY`...). Le graphique du CA (Chart.js) a une infobulle au survol et un tableau des valeurs pour l'accessibilité.
 
 ## Tests
 

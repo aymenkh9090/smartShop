@@ -1,5 +1,5 @@
 import { CurrencyPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, booleanAttribute, computed, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -52,7 +52,10 @@ interface ProductQuery extends PageRequest {
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './product-list.html',
 })
-export class ProductList {
+export class ProductList implements OnInit {
+  /** Alertes de stock (?lowStock=true), ex. depuis le tableau de bord. */
+  readonly lowStock = input(false, { transform: booleanAttribute });
+
   private readonly productService = inject(ProductService);
   private readonly notifications = inject(NotificationService);
   private readonly dialog = inject(MatDialog);
@@ -109,6 +112,13 @@ export class ProductList {
     this.filters.valueChanges
       .pipe(debounceTime(300), takeUntilDestroyed())
       .subscribe(() => this.query.update((query) => ({ ...query, filter: this.toFilter(), page: 0 })));
+  }
+
+  ngOnInit(): void {
+    if (this.lowStock()) {
+      this.filters.controls.lowStock.setValue(true, { emitEvent: false });
+      this.query.update((query) => ({ ...query, filter: this.toFilter() }));
+    }
   }
 
   protected typeLabel(type: ProductType): string {
