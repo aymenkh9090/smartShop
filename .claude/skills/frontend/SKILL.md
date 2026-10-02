@@ -33,5 +33,10 @@ description: Regles pour coder dans frontend/ (Angular 20 standalone) - pages, c
 - Tests : creer le composant DANS `fakeAsync` quand un `debounceTime` est teste ; appeler `fixture.detectChanges()` apres une action qui met a jour un signal lu par `toObservable`.
 - Dans `*matCellDef`, la variable est `any` : passer par une methode typee pour indexer un `Record`.
 
+## Patterns etablis (phase 7)
+- Page detail avec actions : signaux `computed` par action (role + statut), et une methode `run(action, message)` qui gere `busy`, la mise a jour du signal et les notifications.
+- Boutons de workflow generes depuis `nextStatuses` renvoye par le backend (pas de duplication des transitions cote Angular).
+- Spec d'un composant qui embarque un picker : fournir aussi `ProductService` / `CustomerService` mockes.
+
 ## Commandes
 - `npm start`, `npm run build`, `npm run test:ci`.

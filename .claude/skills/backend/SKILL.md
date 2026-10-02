@@ -40,5 +40,12 @@ description: Regles pour coder dans backend/ (Spring Boot 4, Java 21) - nouvelle
 - Pas de suppression des entites referencees par l'historique : `PATCH /{id}/status` avec `StatusUpdateRequest`.
 - `POST` -> `201` + header `Location`. Tests d'integration : etendre `AbstractIntegrationTest` (`tokenFor(Role)`, `getAs/postAs/...`).
 
+## Patterns etablis (phase 7)
+- Workflow a etats : transitions declarees dans l'enum (`AfterSalesStatus.nextWorkflowStatuses()`), verifiees par l'agregat ; chaque transition ajoute une ligne d'historique immuable. Exposer `nextStatuses` dans la reponse pour le frontend.
+- Ordre de verrouillage : agregat (ticket) d'abord, puis produits par id croissant. Personne ne verrouille un produit puis un ticket.
+- Verifier le statut de l'agregat AVANT d'appeler `StockService` (pas de mouvement inutile en cas de refus).
+- Elements ajoutes a un agregat existant (pieces, paiements) : `repository.flush()` avant le mapping, sinon leur id est null dans la reponse.
+- Date locale d'un instant : `BusinessCalendar.dateOf(instant)`.
+
 ## Commandes
 - `./mvnw test` (Docker requis pour Testcontainers), `./mvnw verify` (+ rapport JaCoCo `target/site/jacoco`).

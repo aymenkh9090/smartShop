@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 
@@ -23,5 +24,10 @@ public class BusinessCalendar {
 
     public LocalDate today() {
         return LocalDate.now(clock.withZone(zone));
+    }
+
+    /** Date locale (Tunisie) d'un instant. */
+    public LocalDate dateOf(Instant instant) {
+        return LocalDate.ofInstant(instant, zone);
     }
 }

@@ -57,6 +57,11 @@
             <mat-icon>receipt_long</mat-icon>
           </a>
         }
+        @if (canSeeAfterSales()) {
+          <a mat-icon-button routerLink="/after-sales" [queryParams]="{ customerId: c.id }" matTooltip="SAV du client" aria-label="SAV du client">
+            <mat-icon>build</mat-icon>
+          </a>
+        }
         @if (canEdit()) {
           <a mat-icon-button [routerLink]="[c.id, 'edit']" matTooltip="Modifier" aria-label="Modifier">
             <mat-icon>edit</mat-icon>

@@ -49,6 +49,7 @@ public class StockService {
     static final String DEFAULT_INVENTORY_REASON = "Inventaire";
     static final String SALE_REASON = "Vente";
     static final String PURCHASE_REASON = "Achat";
+    static final String AFTER_SALES_REASON = "Piece SAV";
     private static final int REASON_MAX_LENGTH = 255;
 
     private final ProductRepository productRepository;
@@ -66,7 +67,7 @@ public class StockService {
         return stockMapper.toResponse(movement);
     }
 
-    // ------------------------------------------------------------------ appels internes (ventes, achats)
+    // ------------------------------------------------------------------ appels internes (ventes, achats, SAV)
     // Propagation MANDATORY : ces methodes s'executent dans la transaction de l'operation metier appelante,
     // qui doit traiter ses produits par id croissant (ordre de verrouillage stable).
 
@@ -85,10 +86,29 @@ public class StockService {
     @Transactional(propagation = Propagation.MANDATORY)
     public StockMovement recordSaleCancellation(Long productId, int quantity, List<Long> unitIds,
                                                 String saleReference, String cancelReason) {
-        String reason = "Annulation vente : " + cancelReason;
         return apply(lockProduct(productId), StockMovementType.RETURN, quantity,
-                reason.length() > REASON_MAX_LENGTH ? reason.substring(0, REASON_MAX_LENGTH) : reason,
+                truncateReason("Annulation vente : " + cancelReason),
                 saleReference, List.of(), unitIds, ProductUnitStatus.SOLD);
+    }
+
+    /** Sortie d'une piece utilisee pour une reparation SAV ; les unites designees passent a SOLD. */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public StockMovement recordRepairPart(Long productId, int quantity, List<Long> unitIds, String ticketNumber) {
+        Product product = lockProduct(productId);
+        if (!product.isActive()) {
+            throw new BusinessException("Produit desactive : utilisation impossible (%s)".formatted(product.getName()));
+        }
+        return apply(product, StockMovementType.STOCK_OUT, quantity, AFTER_SALES_REASON, ticketNumber,
+                List.of(), unitIds, ProductUnitStatus.SOLD);
+    }
+
+    /** Remise en stock d'une piece SAV retiree du ticket ou d'un ticket annule. */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public StockMovement recordRepairPartReturn(Long productId, int quantity, List<Long> unitIds,
+                                                String ticketNumber, String reason) {
+        return apply(lockProduct(productId), StockMovementType.RETURN, quantity,
+                truncateReason("Retour piece SAV : " + reason), ticketNumber, List.of(), unitIds,
+                ProductUnitStatus.SOLD);
     }
 
     /** Entree de stock d'un achat ; cree les unites des produits suivis. */
@@ -294,6 +314,10 @@ public class StockService {
     private Product lockProduct(Long productId) {
         return productRepository.findByIdForUpdate(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Produit", productId));
+    }
+
+    private static String truncateReason(String reason) {
+        return reason.length() > REASON_MAX_LENGTH ? reason.substring(0, REASON_MAX_LENGTH) : reason;
     }
 
     private static BusinessException badRequest(String message) {

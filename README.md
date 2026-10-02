@@ -4,7 +4,7 @@ Application web de gestion pour une boutique de smartphones, récepteurs, abonne
 
 Elle centralise : stock, ventes, achats, clients, fournisseurs, crédits clients et fournisseurs, service après-vente (SAV) et tableau de bord.
 
-> État actuel : **Phase 6 – crédits** terminée (crédits clients et fournisseurs, paiements ultérieurs, échéances, soldes). Voir `CLAUDE.md` pour la feuille de route.
+> État actuel : **Phase 7 – SAV** terminée (tickets, workflow de réparation, pièces sorties du stock, garantie, paiements et livraison). Voir `CLAUDE.md` pour la feuille de route.
 
 ## Architecture
 
@@ -145,13 +145,13 @@ Matrice cible (appliquée avec `@PreAuthorize` au fil des phases) :
 |---|---|---|---|---|
 | Utilisateurs | ✅ gestion | — | — | — |
 | Catégories, produits | ✅ | ✅ gestion | lecture | lecture |
-| Stock (mouvements, inventaire) | ✅ | ✅ | lecture | sortie de pièces SAV |
+| Stock (mouvements, inventaire) | ✅ | ✅ | lecture | lecture (pièces SAV via les tickets) |
 | Clients | ✅ | ✅ | ✅ | lecture |
 | Fournisseurs, achats | ✅ | ✅ | — | — |
 | Ventes | ✅ | ✅ (+ annulation) | ✅ création | — |
 | Crédits clients / paiements | ✅ | ✅ | ✅ encaissement | — |
 | Crédits fournisseurs | ✅ | ✅ | — | — |
-| SAV | ✅ | ✅ | création de tickets | ✅ diagnostic, réparation, statuts |
+| SAV | ✅ | ✅ (+ assignation, annulation) | réception, encaissement, livraison | diagnostic, pièces, statuts |
 | Tableau de bord | ✅ complet | ✅ complet | ventes du jour | SAV |
 
 ## Référentiel (phase 3)
@@ -244,6 +244,36 @@ Matrice cible (appliquée avec `@PreAuthorize` au fil des phases) :
   - un paiement est refusé s'il dépasse le reste dû (400), ou si la vente est annulée ou déjà soldée (409) ;
   - les paiements sont sérialisés par un verrou pessimiste ; un test de concurrence vérifie qu'aucun trop-perçu n'est possible.
 - **Soldes** (« solde » des clients et fournisseurs) : agrégation des crédits en cours, triée par encours décroissant. Les ventes annulées sont exclues.
+
+## Service après-vente (phase 7)
+
+| Méthode | URL | Accès | Description |
+|---|---|---|---|
+| GET | `/api/after-sales` | SELLER, TECHNICIAN | liste filtrable (`q` : n° de ticket, IMEI, n° de série, appareil, client ; `status`, `open=true`, `technicianId`, `customerId`, `from`, `to`) |
+| GET | `/api/after-sales/{id}` | SELLER, TECHNICIAN | détail : historique des statuts, pièces, paiements, `nextStatuses` |
+| GET | `/api/after-sales/technicians` | SELLER, TECHNICIAN | techniciens actifs (assignation) |
+| POST | `/api/after-sales` | SELLER | réception d'un appareil |
+| PUT | `/api/after-sales/{id}` | TECHNICIAN | diagnostic, réparation, main-d'œuvre, devis, date prévue, garantie, notes |
+| POST | `/api/after-sales/{id}/status` | TECHNICIAN | transition du workflow (`status`, `comment`) |
+| POST / DELETE | `/api/after-sales/{id}/parts[/{partId}]` | TECHNICIAN | ajout d'une pièce (sortie de stock) / retrait (remise en stock) |
+| PATCH | `/api/after-sales/{id}/technician` | MANAGER | assignation d'un technicien |
+| POST | `/api/after-sales/{id}/payments` | SELLER | acompte ou règlement |
+| POST | `/api/after-sales/{id}/deliver` | SELLER | livraison, avec le règlement éventuel (`payments`) |
+| POST | `/api/after-sales/{id}/cancel` | MANAGER | annulation (`reason` obligatoire) |
+
+**Règles :**
+- **Workflow** (vérifié par l'entité, transition invalide → 409) :
+  `RECEIVED → DIAGNOSING → WAITING_FOR_PART ⇄ IN_REPAIR → READY → DELIVERED`. Depuis `DIAGNOSING`, passage direct à `IN_REPAIR` ou `READY` possible (appareil sans panne ou non réparable) ; `READY → IN_REPAIR` pour une reprise. Quitter le diagnostic exige un diagnostic renseigné. `CANCELLED` est possible tant que le ticket n'est pas livré.
+- **Historique** : chaque changement de statut (création comprise) est enregistré de façon immuable : ancien et nouveau statut, commentaire, auteur, date.
+- **Prise en charge** : un technicien qui démarre le diagnostic d'un ticket non assigné en devient le technicien.
+- **Appareil** : description libre (appareil acheté ailleurs), plus IMEI / n° de série et modèle du catalogue facultatifs. Si l'IMEI (ou un n° de série non ambigu) correspond à une unité vendue par la boutique, le produit et la **vente d'origine** sont rattachés, et la **fin de garantie** est calculée : date de la vente + garantie de la ligne de vente.
+- **Garantie** : appliquée automatiquement si elle couvre la date de réception. Le technicien peut la retirer (casse non couverte), mais ne peut l'appliquer qu'à un appareil garanti. Sous garantie, le montant facturé est nul.
+- **Pièces** : chaque pièce ajoutée sort du stock via `StockService` (mouvement `STOCK_OUT`, motif « Piece SAV », référence = n° de ticket ; les IMEI des pièces suivies passent à `SOLD`) dans la même transaction. Le prix est la copie du prix de vente. Retrait d'une pièce ou annulation du ticket → mouvement `RETURN`. Les pièces ne sont modifiables qu'aux étapes `DIAGNOSING`, `WAITING_FOR_PART` et `IN_REPAIR`.
+- **Montants** : facturé = main-d'œuvre + pièces (0 sous garantie). Les paiements sont enregistrés séparément et sont immuables. Une modification qui ramènerait le coût sous le montant déjà payé est refusée.
+- **Livraison** : uniquement depuis `READY`, et seulement si le ticket est soldé. Les paiements transmis avec la livraison sont annulés si la livraison échoue.
+- **Concurrence** : toutes les écritures verrouillent le ticket (verrou pessimiste, puis les produits) ; un test vérifie qu'aucun trop-perçu n'est possible.
+- **Annulation** : les paiements restent dans l'historique. Les remboursements ne sont pas encore gérés par l'application.
+- **Numérotation** : `SAV-AAAA-NNNNNN` (séquence PostgreSQL).
 
 ## Tests
 

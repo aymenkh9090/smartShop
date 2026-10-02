@@ -58,6 +58,12 @@ export const routes: Routes = [
           import('./features/supplier-credits/supplier-credits.routes').then((m) => m.SUPPLIER_CREDIT_ROUTES),
       },
       {
+        path: 'after-sales',
+        canActivate: [authGuard],
+        data: { roles: ['SELLER', 'TECHNICIAN'] },
+        loadChildren: () => import('./features/after-sales/after-sales.routes').then((m) => m.AFTER_SALES_ROUTES),
+      },
+      {
         path: 'customers',
         loadChildren: () => import('./features/customers/customers.routes').then((m) => m.CUSTOMER_ROUTES),
       },

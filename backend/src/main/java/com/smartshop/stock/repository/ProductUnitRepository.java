@@ -12,6 +12,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public interface ProductUnitRepository extends JpaRepository<ProductUnit, Long>, JpaSpecificationExecutor<ProductUnit> {
 
@@ -25,4 +26,9 @@ public interface ProductUnitRepository extends JpaRepository<ProductUnit, Long>,
     @Query("select u.serialNumber from ProductUnit u where u.product.id = :productId and u.serialNumber in :serials")
     List<String> findExistingSerialNumbers(@Param("productId") Long productId,
                                            @Param("serials") Collection<String> serials);
+
+    Optional<ProductUnit> findByImei(String imei);
+
+    /** Le numero de serie n'est unique que par produit : plusieurs unites peuvent correspondre. */
+    List<ProductUnit> findBySerialNumber(String serialNumber);
 }

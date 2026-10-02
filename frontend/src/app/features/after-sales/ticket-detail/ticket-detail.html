@@ -1,0 +1,258 @@
+@if (ticket(); as t) {
+  <div class="page-header">
+    <h2>
+      Ticket {{ t.ticketNumber }}
+      <span class="badge" [class.warn]="t.status === 'READY'" [class.muted]="!open()">{{ statusLabels[t.status] }}</span>
+      @if (t.underWarranty) {
+        <span class="badge">Sous garantie</span>
+      }
+    </h2>
+    <div>
+      <a mat-button routerLink="/after-sales"><mat-icon>arrow_back</mat-icon> SAV</a>
+      @if (canCancel()) {
+        <button mat-stroked-button type="button" [disabled]="busy()" (click)="cancel()"><mat-icon>block</mat-icon> Annuler</button>
+      }
+      @if (canPay()) {
+        <button mat-stroked-button type="button" [disabled]="busy()" (click)="pay()"><mat-icon>payments</mat-icon> Acompte</button>
+      }
+      @if (canDeliver()) {
+        <button mat-flat-button type="button" [disabled]="busy()" (click)="deliver()"><mat-icon>handshake</mat-icon> Livrer</button>
+      }
+    </div>
+  </div>
+
+  <section class="form-card detail">
+    <dl class="info">
+      <dt>Client</dt>
+      <dd>{{ t.customer.lastName }} {{ t.customer.firstName }} - {{ t.customer.phone }}</dd>
+      <dt>Appareil</dt>
+      <dd>
+        {{ t.deviceDescription }}
+        @if (t.product) {
+          <span class="mat-caption">({{ t.product.sku }})</span>
+        }
+      </dd>
+      <dt>IMEI / N° de serie</dt>
+      <dd>{{ t.imei ?? '-' }} / {{ t.serialNumber ?? '-' }}</dd>
+      <dt>Garantie</dt>
+      <dd>
+        @if (t.warrantyUntil) {
+          Jusqu'au {{ t.warrantyUntil | date: 'dd/MM/yyyy' }}
+          @if (t.saleReference) {
+            - vente
+            @if (isSeller) {
+              <a [routerLink]="['/sales', t.saleId]">{{ t.saleReference }}</a>
+            } @else {
+              {{ t.saleReference }}
+            }
+          }
+        } @else {
+          Aucune (appareil non vendu par la boutique ou sans garantie)
+        }
+      </dd>
+      <dt>Probleme declare</dt>
+      <dd class="multiline">{{ t.reportedIssue }}</dd>
+      <dt>Recu le</dt>
+      <dd>{{ t.receivedAt | date: 'dd/MM/yyyy HH:mm' }} par {{ t.createdBy }}</dd>
+      <dt>Restitution prevue</dt>
+      <dd>{{ t.expectedDate ? (t.expectedDate | date: 'dd/MM/yyyy') : '-' }}</dd>
+      @if (t.deliveredAt) {
+        <dt>Livre le</dt>
+        <dd>{{ t.deliveredAt | date: 'dd/MM/yyyy HH:mm' }}</dd>
+      }
+      <dt>Technicien</dt>
+      <dd>
+        @if (isManager && open()) {
+          <div class="inline-form">
+            <mat-form-field subscriptSizing="dynamic">
+              <mat-select [formControl]="technicianControl" placeholder="Non assigne" aria-label="Technicien">
+                @for (tech of technicians(); track tech.id) {
+                  <mat-option [value]="tech.id">{{ tech.firstName }} {{ tech.lastName }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <button mat-stroked-button type="button" [disabled]="busy() || !technicianControl.value
+                    || technicianControl.value === t.technician?.id" (click)="assignTechnician()">Assigner</button>
+          </div>
+        } @else {
+          {{ t.technician ? t.technician.firstName + ' ' + t.technician.lastName : 'Non assigne' }}
+        }
+      </dd>
+    </dl>
+
+    @if (canWork() && t.nextStatuses.length) {
+      <h3>Avancement</h3>
+      <div class="inline-form">
+        <mat-form-field class="comment" subscriptSizing="dynamic">
+          <mat-label>Commentaire (facultatif)</mat-label>
+          <input matInput [formControl]="statusComment" maxlength="500" />
+        </mat-form-field>
+        @for (next of t.nextStatuses; track next) {
+          <button mat-flat-button type="button" [disabled]="busy()" (click)="changeStatus(next)">
+            <mat-icon>arrow_forward</mat-icon> {{ statusLabels[next] }}
+          </button>
+        }
+      </div>
+    }
+
+    <h3>Diagnostic et reparation</h3>
+    @if (canWork()) {
+      <form class="form-grid" [formGroup]="workForm" (ngSubmit)="saveWork()" novalidate>
+        <mat-form-field class="full-width">
+          <mat-label>Diagnostic</mat-label>
+          <textarea matInput formControlName="diagnosis" rows="3"></textarea>
+          <mat-error>{{ errorOf(workForm.controls.diagnosis) }}</mat-error>
+        </mat-form-field>
+        <mat-form-field class="full-width">
+          <mat-label>Reparation effectuee</mat-label>
+          <textarea matInput formControlName="repairDescription" rows="2"></textarea>
+          <mat-error>{{ errorOf(workForm.controls.repairDescription) }}</mat-error>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Main-d'oeuvre (DT)</mat-label>
+          <input matInput type="number" min="0" step="0.001" formControlName="laborCost" />
+          <mat-error>{{ errorOf(workForm.controls.laborCost) }}</mat-error>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Devis annonce (DT)</mat-label>
+          <input matInput type="number" min="0" step="0.001" formControlName="estimatedCost" />
+          <mat-error>{{ errorOf(workForm.controls.estimatedCost) }}</mat-error>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Restitution prevue</mat-label>
+          <input matInput [matDatepicker]="picker" formControlName="expectedDate" />
+          <mat-datepicker-toggle matIconSuffix [for]="picker" />
+          <mat-datepicker #picker />
+        </mat-form-field>
+        <mat-checkbox formControlName="underWarranty"
+                      [matTooltip]="t.warrantyUntil ? 'Rien ne sera facture' : 'Appareil sans garantie boutique'">
+          Prise en charge sous garantie
+        </mat-checkbox>
+        <mat-form-field class="full-width">
+          <mat-label>Notes</mat-label>
+          <textarea matInput formControlName="notes" rows="2"></textarea>
+          <mat-error>{{ errorOf(workForm.controls.notes) }}</mat-error>
+        </mat-form-field>
+        <div class="form-actions full-width">
+          <button mat-flat-button type="submit" [disabled]="busy() || workForm.pristine">Enregistrer</button>
+        </div>
+      </form>
+    } @else {
+      <dl class="info">
+        <dt>Diagnostic</dt>
+        <dd class="multiline">{{ t.diagnosis ?? '-' }}</dd>
+        <dt>Reparation</dt>
+        <dd class="multiline">{{ t.repairDescription ?? '-' }}</dd>
+        <dt>Devis annonce</dt>
+        <dd>{{ t.estimatedCost !== null ? (t.estimatedCost | currency: 'TND' : 'symbol' : '1.3-3') : '-' }}</dd>
+        <dt>Notes</dt>
+        <dd class="multiline">{{ t.notes ?? '-' }}</dd>
+      </dl>
+    }
+
+    <h3>Pieces utilisees</h3>
+    @if (t.parts.length) {
+      <table class="detail-table">
+        <thead>
+          <tr><th>Piece</th><th>IMEI / N° serie</th><th>Qte</th><th class="amount">Prix</th><th class="amount">Total</th><th>Ajoutee par</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (part of t.parts; track part.id) {
+            <tr>
+              <td>{{ part.productName }} <div class="mat-caption">{{ part.productSku }}</div></td>
+              <td>
+                @for (unit of part.units; track unit.id) {
+                  <div>{{ unitLabel(unit) }}</div>
+                }
+              </td>
+              <td>{{ part.quantity }}</td>
+              <td class="amount">{{ part.unitPrice | currency: 'TND' : 'symbol' : '1.3-3' }}</td>
+              <td class="amount">{{ part.lineTotal | currency: 'TND' : 'symbol' : '1.3-3' }}</td>
+              <td>{{ part.addedBy }}</td>
+              <td>
+                @if (inWorkshop()) {
+                  <button mat-icon-button type="button" [disabled]="busy()" (click)="removePart(part.id, part.productName)"
+                          matTooltip="Retirer (remise en stock)" aria-label="Retirer la piece">
+                    <mat-icon>remove_circle_outline</mat-icon>
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    } @else {
+      <p class="no-data">Aucune piece.</p>
+    }
+    @if (inWorkshop()) {
+      <div class="part-editor">
+        <app-product-picker label="Ajouter une piece (sortie de stock)" (selected)="selectPart($event)" />
+        @if (partProduct(); as p) {
+          <form class="inline-form" [formGroup]="partForm" (ngSubmit)="addPart()">
+            <span>{{ p.name }} - {{ p.salePrice | currency: 'TND' : 'symbol' : '1.3-3' }} (stock : {{ p.quantity }})</span>
+            @if (p.serialTracked) {
+              <mat-form-field subscriptSizing="dynamic">
+                <mat-label>Unites</mat-label>
+                <mat-select formControlName="unitIds" multiple>
+                  @for (unit of partUnits(); track unit.id) {
+                    <mat-option [value]="unit.id">{{ unitLabel(unit) }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            } @else {
+              <mat-form-field class="quantity" subscriptSizing="dynamic">
+                <mat-label>Quantite</mat-label>
+                <input matInput type="number" min="1" max="100" step="1" formControlName="quantity" />
+              </mat-form-field>
+            }
+            <button mat-flat-button type="submit" [disabled]="busy() || partForm.invalid">Ajouter</button>
+            <button mat-button type="button" (click)="partProduct.set(null)">Annuler</button>
+          </form>
+        }
+      </div>
+    }
+
+    <dl class="totals">
+      <dt>Main-d'oeuvre</dt><dd>{{ t.laborCost | currency: 'TND' : 'symbol' : '1.3-3' }}</dd>
+      <dt>Pieces</dt><dd>{{ t.partsTotal | currency: 'TND' : 'symbol' : '1.3-3' }}</dd>
+      <dt>A facturer{{ t.underWarranty ? ' (garantie)' : '' }}</dt>
+      <dd class="grand-total">{{ t.totalCost | currency: 'TND' : 'symbol' : '1.3-3' }}</dd>
+      <dt>Deja paye</dt><dd>{{ t.amountPaid | currency: 'TND' : 'symbol' : '1.3-3' }}</dd>
+      <dt>Reste du</dt>
+      <dd [class.due]="t.amountDue > 0">{{ t.amountDue | currency: 'TND' : 'symbol' : '1.3-3' }}</dd>
+    </dl>
+
+    <h3>Paiements</h3>
+    @if (t.payments.length) {
+      <table class="detail-table">
+        <thead><tr><th>Date</th><th>Moyen</th><th>Reference</th><th>Par</th><th class="amount">Montant</th></tr></thead>
+        <tbody>
+          @for (payment of t.payments; track payment.id) {
+            <tr>
+              <td>{{ payment.paidAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+              <td>{{ methodLabel(payment.method) }}</td>
+              <td>{{ payment.reference }}</td>
+              <td>{{ payment.createdBy }}</td>
+              <td class="amount">{{ payment.amount | currency: 'TND' : 'symbol' : '1.3-3' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    } @else {
+      <p class="no-data">Aucun paiement.</p>
+    }
+
+    <h3>Historique des statuts</h3>
+    <ol class="timeline">
+      @for (change of t.statusHistory; track change.id) {
+        <li>
+          <strong>{{ statusLabel(change.toStatus) }}</strong>
+          <span class="mat-caption">{{ change.changedAt | date: 'dd/MM/yyyy HH:mm' }} - {{ change.changedBy }}</span>
+          @if (change.comment) {
+            <div class="multiline">{{ change.comment }}</div>
+          }
+        </li>
+      }
+    </ol>
+  </section>
+}

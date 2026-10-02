@@ -1,0 +1,36 @@
+.multiline {
+  white-space: pre-line;
+}
+
+.inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+
+  .comment {
+    flex: 1 1 260px;
+  }
+
+  .quantity {
+    width: 110px;
+  }
+}
+
+.part-editor {
+  margin-top: 1rem;
+}
+
+.timeline {
+  margin: 0;
+  padding-left: 1.25rem;
+
+  li {
+    padding: 0.25rem 0;
+
+    .mat-caption {
+      margin-left: 0.5rem;
+      color: var(--mat-sys-on-surface-variant);
+    }
+  }
+}

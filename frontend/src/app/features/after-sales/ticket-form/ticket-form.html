@@ -1,0 +1,73 @@
+<div class="page-header">
+  <h2>Reception d'un appareil</h2>
+</div>
+
+<form class="form-card" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  <div class="form-grid">
+    @if (customer(); as c) {
+      <div class="selected full-width">
+        <span>Client : <strong>{{ c.lastName }} {{ c.firstName }}</strong> - {{ c.phone }}</span>
+        <button mat-icon-button type="button" (click)="customer.set(null)" aria-label="Changer de client">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    } @else {
+      <app-customer-picker class="full-width" label="Client *" (selected)="selectCustomer($event)" />
+    }
+
+    @if (product(); as p) {
+      <div class="selected full-width">
+        <span>Modele du catalogue : <strong>{{ p.sku }} - {{ p.name }}</strong></span>
+        <button mat-icon-button type="button" (click)="product.set(null)" aria-label="Retirer le modele">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    } @else {
+      <app-product-picker class="full-width" label="Modele du catalogue (facultatif)" (selected)="selectProduct($event)" />
+    }
+
+    <mat-form-field>
+      <mat-label>Appareil (marque, modele, couleur...)</mat-label>
+      <input matInput formControlName="deviceDescription" />
+      <mat-error>{{ errorOf(form.controls.deviceDescription) }}</mat-error>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>IMEI</mat-label>
+      <input matInput formControlName="imei" inputmode="numeric" maxlength="15" />
+      <mat-hint>Un appareil vendu par la boutique est reconnu (garantie)</mat-hint>
+      <mat-error>{{ errorOf(form.controls.imei) }}</mat-error>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Numero de serie</mat-label>
+      <input matInput formControlName="serialNumber" />
+      <mat-error>{{ errorOf(form.controls.serialNumber) }}</mat-error>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Devis annonce (DT)</mat-label>
+      <input matInput type="number" min="0" step="0.001" formControlName="estimatedCost" />
+      <mat-error>{{ errorOf(form.controls.estimatedCost) }}</mat-error>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Restitution prevue</mat-label>
+      <input matInput [matDatepicker]="picker" [min]="minDate" formControlName="expectedDate" />
+      <mat-datepicker-toggle matIconSuffix [for]="picker" />
+      <mat-datepicker #picker />
+    </mat-form-field>
+
+    <mat-form-field class="full-width">
+      <mat-label>Probleme declare par le client</mat-label>
+      <textarea matInput formControlName="reportedIssue" rows="3"></textarea>
+      <mat-error>{{ errorOf(form.controls.reportedIssue) }}</mat-error>
+    </mat-form-field>
+    <mat-form-field class="full-width">
+      <mat-label>Notes (etat, accessoires laisses...)</mat-label>
+      <textarea matInput formControlName="notes" rows="2"></textarea>
+      <mat-error>{{ errorOf(form.controls.notes) }}</mat-error>
+    </mat-form-field>
+  </div>
+
+  <div class="form-actions">
+    <a mat-button routerLink="/after-sales">Annuler</a>
+    <button mat-flat-button type="submit" [disabled]="submitting()">Enregistrer le ticket</button>
+  </div>
+</form>
