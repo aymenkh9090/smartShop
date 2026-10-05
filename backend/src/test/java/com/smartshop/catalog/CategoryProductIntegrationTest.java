@@ -11,6 +11,7 @@ import static com.smartshop.user.entity.Role.MANAGER;
 import static com.smartshop.user.entity.Role.SELLER;
 import static com.smartshop.user.entity.Role.TECHNICIAN;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -48,7 +49,7 @@ class CategoryProductIntegrationTest extends AbstractIntegrationTest {
         long other = createCategory("Cables");
         putAs(MANAGER, "/api/categories/" + other, "{\"name\":\"chargeurs\"}")
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("Une categorie nommee 'chargeurs' existe deja"));
+                .andExpect(jsonPath("$.message").value("Une catégorie nommée 'chargeurs' existe déjà"));
         // Renommer une categorie avec son propre nom (casse differente) reste possible
         putAs(MANAGER, "/api/categories/" + id, "{\"name\":\"CHARGEURS\"}").andExpect(status().isOk());
     }
@@ -61,7 +62,7 @@ class CategoryProductIntegrationTest extends AbstractIntegrationTest {
 
         mockMvc.perform(delete("/api/categories/" + used).header(HttpHeaders.AUTHORIZATION, tokenFor(MANAGER)))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("Categorie utilisee par 1 produit(s) : impossible de la supprimer"));
+                .andExpect(jsonPath("$.message").value("Catégorie utilisée par 1 produit(s) : impossible de la supprimer"));
         mockMvc.perform(delete("/api/categories/" + unused).header(HttpHeaders.AUTHORIZATION, tokenFor(MANAGER)))
                 .andExpect(status().isNoContent());
         getAs(SELLER, "/api/categories/" + unused).andExpect(status().isNotFound());
@@ -101,7 +102,7 @@ class CategoryProductIntegrationTest extends AbstractIntegrationTest {
         long other = createProduct(categoryId, "SKU-3", null);
         putAs(MANAGER, "/api/products/" + other, productJson(categoryId, "sku-1", null))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("Un produit avec le SKU 'SKU-1' existe deja"));
+                .andExpect(jsonPath("$.message").value("Un produit avec le SKU 'SKU-1' existe déjà"));
         postAs(MANAGER, "/api/products", productJson(categoryId, "SKU-2", "111"))
                 .andExpect(status().isConflict());
     }
@@ -115,7 +116,25 @@ class CategoryProductIntegrationTest extends AbstractIntegrationTest {
         postAs(MANAGER, "/api/products", json)
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors[*].field",
-                        containsInAnyOrder("sku", "name", "categoryId", "purchasePrice", "salePrice", "serialTracked")));
+                        containsInAnyOrder("sku", "name", "categoryId", "purchasePrice", "salePrice")));
+    }
+
+    @Test
+    void product_simpleEntry_generatesSkuAndDefaults() throws Exception {
+        long categoryId = createCategory("Smartphones");
+        String json = """
+                {"name":"Galaxy A15","categoryId":%d,"type":"SMARTPHONE","salePrice":599}
+                """.formatted(categoryId);
+
+        postAs(MANAGER, "/api/products", json)
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.sku").value(matchesPattern("PRD-\\d{6}")))
+                .andExpect(jsonPath("$.condition").value("NEW"))
+                .andExpect(jsonPath("$.purchasePrice").value(0))
+                .andExpect(jsonPath("$.minStock").value(0))
+                .andExpect(jsonPath("$.serialTracked").value(true));
+        postAs(MANAGER, "/api/products", json.replace("Galaxy A15", "Galaxy A25"))
+                .andExpect(status().isCreated());
     }
 
     @Test
@@ -178,7 +197,7 @@ class CategoryProductIntegrationTest extends AbstractIntegrationTest {
     void product_sortOnUnknownProperty_returns400() throws Exception {
         getAs(SELLER, "/api/products?sort=password")
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Critere de tri invalide : password"));
+                .andExpect(jsonPath("$.message").value("Critère de tri invalide : password"));
     }
 
     @Test

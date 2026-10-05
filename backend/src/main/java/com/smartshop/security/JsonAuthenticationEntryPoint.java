@@ -33,7 +33,7 @@ public class JsonAuthenticationEntryPoint implements AuthenticationEntryPoint, A
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response,
                        AccessDeniedException accessDeniedException) throws IOException {
-        write(response, HttpStatus.FORBIDDEN, "Acces refuse", request);
+        write(response, HttpStatus.FORBIDDEN, "Accès refusé", request);
     }
 
     private void write(HttpServletResponse response, HttpStatus status, String message,

@@ -107,7 +107,7 @@ class SalePurchaseIntegrationTest extends AbstractIntegrationTest {
                 {"items":[{"productId":%d,"quantity":3}],"payments":[{"amount":10,"method":"CASH"}]}
                 """.formatted(cableId))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value(containsString("necessite un client")));
+                .andExpect(jsonPath("$.message").value(containsString("nécessite un client")));
 
         getAs(SELLER, "/api/products/" + cableId).andExpect(jsonPath("$.quantity").value(10));
         getAs(SELLER, "/api/stock/movements?type=STOCK_OUT").andExpect(jsonPath("$.totalElements").value(0));
@@ -158,7 +158,7 @@ class SalePurchaseIntegrationTest extends AbstractIntegrationTest {
                 {"items":[{"productId":%d,"quantity":1}],"payments":[{"amount":50,"method":"CASH"}]}
                 """.formatted(cableId))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value(containsString("depasse le total")));
+                .andExpect(jsonPath("$.message").value(containsString("dépasse le total")));
         getAs(SELLER, "/api/products/" + cableId).andExpect(jsonPath("$.quantity").value(10));
     }
 
@@ -170,7 +170,7 @@ class SalePurchaseIntegrationTest extends AbstractIntegrationTest {
                 {"items":[{"productId":%d,"quantity":1}],"payments":[{"amount":19.99,"method":"CASH"}]}
                 """.formatted(cableId))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value(containsString("desactive")));
+                .andExpect(jsonPath("$.message").value(containsString("désactivé")));
     }
 
     @Test
@@ -197,6 +197,37 @@ class SalePurchaseIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.content[0].reason").value(containsString("Annulation vente")));
 
         postAs(ADMIN, "/api/sales/%d/cancel".formatted(saleId), "{\"reason\":\"Encore\"}").andExpect(status().isConflict());
+    }
+
+    @Test
+    void phonesWithoutImei_canBeBoughtAndSold_stockIsStillChecked() throws Exception {
+        // Achat de 2 telephones sans IMEI : le stock passe de 2 (identifies) a 4
+        postAs(MANAGER, "/api/purchases", """
+                {"supplierId":%d,"items":[{"productId":%d,"quantity":2,"unitCost":1100}],
+                 "payments":[{"amount":2200,"method":"CASH"}]}
+                """.formatted(supplierId, phoneId)).andExpect(status().isCreated());
+        getAs(SELLER, "/api/products/" + phoneId).andExpect(jsonPath("$.quantity").value(4));
+
+        // Vente de 2 telephones sans choisir d'IMEI
+        postAs(SELLER, "/api/sales", """
+                {"items":[{"productId":%d,"quantity":2}],"payments":[{"amount":2599,"method":"CASH"}]}
+                """.formatted(phoneId))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.items[0].quantity").value(2))
+                .andExpect(jsonPath("$.items[0].units.length()").value(0));
+        getAs(SELLER, "/api/products/" + phoneId).andExpect(jsonPath("$.quantity").value(2));
+
+        // Il ne reste que les 2 telephones avec IMEI : il faut alors les designer
+        postAs(SELLER, "/api/sales", """
+                {"items":[{"productId":%d,"quantity":1}],"payments":[{"amount":1299.5,"method":"CASH"}]}
+                """.formatted(phoneId))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(containsString("Sélectionnez l'IMEI")));
+        // Et le stock reste verifie
+        postAs(SELLER, "/api/sales", """
+                {"items":[{"productId":%d,"quantity":3}],"payments":[{"amount":3898.5,"method":"CASH"}]}
+                """.formatted(phoneId))
+                .andExpect(status().isConflict());
     }
 
     @Test

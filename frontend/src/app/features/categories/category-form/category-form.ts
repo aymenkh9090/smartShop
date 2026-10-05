@@ -52,7 +52,7 @@ export class CategoryForm implements OnInit {
     const save$ = id ? this.categoryService.update(Number(id), request) : this.categoryService.create(request);
     save$.subscribe({
       next: () => {
-        this.notifications.success(id ? 'Categorie modifiee' : 'Categorie creee');
+        this.notifications.success(id ? 'Catégorie modifiée' : 'Catégorie créée');
         void this.router.navigate(['/categories']);
       },
       error: (error: unknown) => {

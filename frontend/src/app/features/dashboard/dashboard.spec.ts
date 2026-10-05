@@ -60,7 +60,7 @@ describe('Dashboard', () => {
 
     expect(text).toContain('CA du mois');
     expect(text).toContain('+10');
-    expect(text).toContain('Credits fournisseurs');
+    expect(text).toContain('Crédits fournisseurs');
     expect(text).toContain('CA SAV du mois');
     expect(text).toContain('Produits les plus vendus');
     expect(text).toContain('SAV-2026-000009');
@@ -75,21 +75,21 @@ describe('Dashboard', () => {
     expect(text).toContain('Stock faible');
     expect(text).toContain('SAV en cours');
     expect(text).not.toContain('CA du mois');
-    expect(text).not.toContain('Credits clients');
+    expect(text).not.toContain('Crédits clients');
     expect(text).not.toContain('Produits les plus vendus');
   });
 
   it('shows the previous amount instead of a trend when last month had no sales', () => {
     const text = render(of({ ...MANAGER_DATA, monthSales: { count: 1, amount: 50, previousAmount: 0 } })).textContent ?? '';
 
-    expect(text).toContain('mois dernier a date');
+    expect(text).toContain('mois dernier à date');
     expect(text).not.toContain('vs mois dernier');
   });
 
   it('reports a loading error', () => {
     const text = render(throwError(() => new Error('boom'))).textContent ?? '';
 
-    expect(text).toContain("n'a pas pu etre charge");
+    expect(text).toContain("n'a pas pu être chargé");
     expect(TestBed.inject(NotificationService).error).toHaveBeenCalled();
   });
 });

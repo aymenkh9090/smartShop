@@ -2,9 +2,9 @@
   <div class="page-header">
     <h2>
       Ticket {{ t.ticketNumber }}
-      <span class="badge" [class.warn]="t.status === 'READY'" [class.muted]="!open()">{{ statusLabels[t.status] }}</span>
+      <span class="badge" [class.success]="t.status === 'READY'" [class.muted]="!open()">{{ statusLabels[t.status] }}</span>
       @if (t.underWarranty) {
-        <span class="badge">Sous garantie</span>
+        <span class="badge success">Sous garantie</span>
       }
     </h2>
     <div>
@@ -32,7 +32,7 @@
           <span class="mat-caption">({{ t.product.sku }})</span>
         }
       </dd>
-      <dt>IMEI / N° de serie</dt>
+      <dt>IMEI / N° de série</dt>
       <dd>{{ t.imei ?? '-' }} / {{ t.serialNumber ?? '-' }}</dd>
       <dt>Garantie</dt>
       <dd>
@@ -50,11 +50,11 @@
           Aucune (appareil non vendu par la boutique ou sans garantie)
         }
       </dd>
-      <dt>Probleme declare</dt>
+      <dt>Problème déclaré</dt>
       <dd class="multiline">{{ t.reportedIssue }}</dd>
-      <dt>Recu le</dt>
+      <dt>Reçu le</dt>
       <dd>{{ t.receivedAt | date: 'dd/MM/yyyy HH:mm' }} par {{ t.createdBy }}</dd>
-      <dt>Restitution prevue</dt>
+      <dt>Restitution prévue</dt>
       <dd>{{ t.expectedDate ? (t.expectedDate | date: 'dd/MM/yyyy') : '-' }}</dd>
       @if (t.deliveredAt) {
         <dt>Livre le</dt>
@@ -65,7 +65,7 @@
         @if (isManager && open()) {
           <div class="inline-form">
             <mat-form-field subscriptSizing="dynamic">
-              <mat-select [formControl]="technicianControl" placeholder="Non assigne" aria-label="Technicien">
+              <mat-select [formControl]="technicianControl" placeholder="Non assigné" aria-label="Technicien">
                 @for (tech of technicians(); track tech.id) {
                   <mat-option [value]="tech.id">{{ tech.firstName }} {{ tech.lastName }}</mat-option>
                 }
@@ -75,7 +75,7 @@
                     || technicianControl.value === t.technician?.id" (click)="assignTechnician()">Assigner</button>
           </div>
         } @else {
-          {{ t.technician ? t.technician.firstName + ' ' + t.technician.lastName : 'Non assigne' }}
+          {{ t.technician ? t.technician.firstName + ' ' + t.technician.lastName : 'Non assigné' }}
         }
       </dd>
     </dl>
@@ -95,7 +95,7 @@
       </div>
     }
 
-    <h3>Diagnostic et reparation</h3>
+    <h3>Diagnostic et réparation</h3>
     @if (canWork()) {
       <form class="form-grid" [formGroup]="workForm" (ngSubmit)="saveWork()" novalidate>
         <mat-form-field class="full-width">
@@ -104,7 +104,7 @@
           <mat-error>{{ errorOf(workForm.controls.diagnosis) }}</mat-error>
         </mat-form-field>
         <mat-form-field class="full-width">
-          <mat-label>Reparation effectuee</mat-label>
+          <mat-label>Réparation effectuée</mat-label>
           <textarea matInput formControlName="repairDescription" rows="2"></textarea>
           <mat-error>{{ errorOf(workForm.controls.repairDescription) }}</mat-error>
         </mat-form-field>
@@ -119,7 +119,7 @@
           <mat-error>{{ errorOf(workForm.controls.estimatedCost) }}</mat-error>
         </mat-form-field>
         <mat-form-field>
-          <mat-label>Restitution prevue</mat-label>
+          <mat-label>Restitution prévue</mat-label>
           <input matInput [matDatepicker]="picker" formControlName="expectedDate" />
           <mat-datepicker-toggle matIconSuffix [for]="picker" />
           <mat-datepicker #picker />
@@ -141,7 +141,7 @@
       <dl class="info">
         <dt>Diagnostic</dt>
         <dd class="multiline">{{ t.diagnosis ?? '-' }}</dd>
-        <dt>Reparation</dt>
+        <dt>Réparation</dt>
         <dd class="multiline">{{ t.repairDescription ?? '-' }}</dd>
         <dt>Devis annonce</dt>
         <dd>{{ t.estimatedCost !== null ? (t.estimatedCost | currency: 'TND' : 'symbol' : '1.3-3') : '-' }}</dd>
@@ -150,11 +150,11 @@
       </dl>
     }
 
-    <h3>Pieces utilisees</h3>
+    <h3>Pièces utilisées</h3>
     @if (t.parts.length) {
       <table class="detail-table">
         <thead>
-          <tr><th>Piece</th><th>IMEI / N° serie</th><th>Qte</th><th class="amount">Prix</th><th class="amount">Total</th><th>Ajoutee par</th><th></th></tr>
+          <tr><th>Pièce</th><th>IMEI / N° série</th><th>Qte</th><th class="amount">Prix</th><th class="amount">Total</th><th>Ajoutée par</th><th></th></tr>
         </thead>
         <tbody>
           @for (part of t.parts; track part.id) {
@@ -172,7 +172,7 @@
               <td>
                 @if (inWorkshop()) {
                   <button mat-icon-button type="button" [disabled]="busy()" (click)="removePart(part.id, part.productName)"
-                          matTooltip="Retirer (remise en stock)" aria-label="Retirer la piece">
+                          matTooltip="Retirer (remise en stock)" aria-label="Retirer la pièce">
                     <mat-icon>remove_circle_outline</mat-icon>
                   </button>
                 }
@@ -182,17 +182,17 @@
         </tbody>
       </table>
     } @else {
-      <p class="no-data">Aucune piece.</p>
+      <p class="no-data">Aucune pièce.</p>
     }
     @if (inWorkshop()) {
       <div class="part-editor">
-        <app-product-picker label="Ajouter une piece (sortie de stock)" (selected)="selectPart($event)" />
+        <app-product-picker label="Ajouter une pièce (sortie de stock)" (selected)="selectPart($event)" />
         @if (partProduct(); as p) {
           <form class="inline-form" [formGroup]="partForm" (ngSubmit)="addPart()">
             <span>{{ p.name }} - {{ p.salePrice | currency: 'TND' : 'symbol' : '1.3-3' }} (stock : {{ p.quantity }})</span>
             @if (p.serialTracked) {
               <mat-form-field subscriptSizing="dynamic">
-                <mat-label>Unites</mat-label>
+                <mat-label>Unités</mat-label>
                 <mat-select formControlName="unitIds" multiple>
                   @for (unit of partUnits(); track unit.id) {
                     <mat-option [value]="unit.id">{{ unitLabel(unit) }}</mat-option>
@@ -201,7 +201,7 @@
               </mat-form-field>
             } @else {
               <mat-form-field class="quantity" subscriptSizing="dynamic">
-                <mat-label>Quantite</mat-label>
+                <mat-label>Quantité</mat-label>
                 <input matInput type="number" min="1" max="100" step="1" formControlName="quantity" />
               </mat-form-field>
             }
@@ -214,10 +214,10 @@
 
     <dl class="totals">
       <dt>Main-d'oeuvre</dt><dd>{{ t.laborCost | currency: 'TND' : 'symbol' : '1.3-3' }}</dd>
-      <dt>Pieces</dt><dd>{{ t.partsTotal | currency: 'TND' : 'symbol' : '1.3-3' }}</dd>
+      <dt>Pièces</dt><dd>{{ t.partsTotal | currency: 'TND' : 'symbol' : '1.3-3' }}</dd>
       <dt>A facturer{{ t.underWarranty ? ' (garantie)' : '' }}</dt>
       <dd class="grand-total">{{ t.totalCost | currency: 'TND' : 'symbol' : '1.3-3' }}</dd>
-      <dt>Deja paye</dt><dd>{{ t.amountPaid | currency: 'TND' : 'symbol' : '1.3-3' }}</dd>
+      <dt>Déjà payé</dt><dd>{{ t.amountPaid | currency: 'TND' : 'symbol' : '1.3-3' }}</dd>
       <dt>Reste du</dt>
       <dd [class.due]="t.amountDue > 0">{{ t.amountDue | currency: 'TND' : 'symbol' : '1.3-3' }}</dd>
     </dl>
@@ -225,7 +225,7 @@
     <h3>Paiements</h3>
     @if (t.payments.length) {
       <table class="detail-table">
-        <thead><tr><th>Date</th><th>Moyen</th><th>Reference</th><th>Par</th><th class="amount">Montant</th></tr></thead>
+        <thead><tr><th>Date</th><th>Moyen</th><th>Référence</th><th>Par</th><th class="amount">Montant</th></tr></thead>
         <tbody>
           @for (payment of t.payments; track payment.id) {
             <tr>

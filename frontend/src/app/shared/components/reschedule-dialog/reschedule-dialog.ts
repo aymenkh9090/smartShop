@@ -40,11 +40,11 @@ export function fromIsoDate(value: string): Date {
     <h2 mat-dialog-title>{{ data.title }}</h2>
     <mat-dialog-content>
       <mat-form-field class="full">
-        <mat-label>Nouvelle echeance</mat-label>
+        <mat-label>Nouvelle échéance</mat-label>
         <input matInput [matDatepicker]="picker" [min]="today" [formControl]="dueDate" />
         <mat-datepicker-toggle matIconSuffix [for]="picker" />
         <mat-datepicker #picker />
-        <mat-hint>Laisser vide pour supprimer l'echeance</mat-hint>
+        <mat-hint>Laisser vide pour supprimer l'échéance</mat-hint>
       </mat-form-field>
     </mat-dialog-content>
     <mat-dialog-actions align="end">

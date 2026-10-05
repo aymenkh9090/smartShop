@@ -22,8 +22,8 @@ const TICKET = {
   saleReference: null,
   imei: '490154203237518',
   serialNumber: null,
-  reportedIssue: 'Ecran fissure',
-  diagnosis: 'Dalle a remplacer',
+  reportedIssue: 'Écran fissure',
+  diagnosis: 'Dalle à remplacer',
   repairDescription: null,
   technician: null,
   status: 'IN_REPAIR',
@@ -48,7 +48,7 @@ const TICKET = {
   ],
   parts: [
     {
-      id: 7, productId: 4, productSku: 'ECR-A55', productName: 'Ecran A55', quantity: 1, unitPrice: 120,
+      id: 7, productId: 4, productSku: 'ECR-A55', productName: 'Écran A55', quantity: 1, unitPrice: 120,
       lineTotal: 120, units: [], addedBy: 'tech', addedAt: '2026-10-01T11:00:00Z',
     },
   ],
@@ -79,16 +79,16 @@ describe('TicketDetail', () => {
 
   it('shows parts, amounts and the status history', () => {
     const text = render(['SELLER']);
-    expect(text).toContain('Ecran A55');
+    expect(text).toContain('Écran A55');
     expect(text).toContain('Pris en charge');
-    expect(text).toContain('Dalle a remplacer');
+    expect(text).toContain('Dalle à remplacer');
   });
 
   it('lets a technician move the workflow and manage parts, but not collect payments', () => {
     const text = render(['TECHNICIAN']);
     expect(text).toContain('Avancement');
-    expect(text).toContain('Pret');
-    expect(text).toContain('Ajouter une piece');
+    expect(text).toContain('Prêt');
+    expect(text).toContain('Ajouter une pièce');
     expect(text).not.toContain('Acompte');
     expect(text).not.toContain('Annuler');
   });
@@ -109,6 +109,6 @@ describe('TicketDetail', () => {
     expect(text).not.toContain('Avancement');
     expect(text).not.toContain('Acompte');
     expect(text).not.toContain('Annuler');
-    expect(text).not.toContain('Ajouter une piece');
+    expect(text).not.toContain('Ajouter une pièce');
   });
 });

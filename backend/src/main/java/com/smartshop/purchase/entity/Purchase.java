@@ -121,7 +121,7 @@ public class Purchase {
         total = Money.of(items.stream().map(PurchaseItem::getLineTotal).reduce(BigDecimal.ZERO, BigDecimal::add));
         amountPaid = Money.of(payments.stream().map(PurchasePayment::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add));
         if (amountPaid.compareTo(total) > 0) {
-            throw new BusinessException("Le montant paye (%s) depasse le total (%s)".formatted(amountPaid, total),
+            throw new BusinessException("Le montant payé (%s) dépasse le total (%s)".formatted(amountPaid, total),
                     HttpStatus.BAD_REQUEST);
         }
         paymentStatus = PaymentStatus.of(total, amountPaid);
@@ -133,11 +133,11 @@ public class Purchase {
     public PurchasePayment makePayment(BigDecimal amount, PaymentMethod method, String reference, User user,
                                        Instant paidAt) {
         if (paymentStatus == PaymentStatus.PAID) {
-            throw new BusinessException("L'achat %s est deja solde".formatted(this.reference));
+            throw new BusinessException("L'achat %s est déjà soldé".formatted(this.reference));
         }
         BigDecimal paid = Money.of(amount);
         if (paid.compareTo(getAmountDue()) > 0) {
-            throw new BusinessException("Le paiement (%s) depasse le reste du (%s)".formatted(paid, getAmountDue()),
+            throw new BusinessException("Le paiement (%s) dépasse le reste dû (%s)".formatted(paid, getAmountDue()),
                     HttpStatus.BAD_REQUEST);
         }
         PurchasePayment payment = new PurchasePayment(this, paid, method, reference, user, paidAt);
@@ -150,7 +150,7 @@ public class Purchase {
     /** Reporte (ou supprime) l'echeance d'un credit fournisseur non solde. */
     public void reschedule(LocalDate newDueDate) {
         if (paymentStatus == PaymentStatus.PAID) {
-            throw new BusinessException("Seul un credit en cours peut etre reporte");
+            throw new BusinessException("Seul un crédit en cours peut être reporté");
         }
         dueDate = newDueDate;
     }

@@ -167,7 +167,7 @@ export class TicketDetail implements OnInit {
           underWarranty: value.underWarranty,
           notes: value.notes.trim() || null,
         }),
-      'Ticket mis a jour',
+      'Ticket mis à jour',
       undefined,
       this.workForm,
     );
@@ -176,7 +176,7 @@ export class TicketDetail implements OnInit {
   protected assignTechnician(): void {
     const technicianId = this.technicianControl.value;
     if (technicianId) {
-      this.run((ticket) => this.afterSalesService.assignTechnician(ticket.id, technicianId), 'Technicien assigne');
+      this.run((ticket) => this.afterSalesService.assignTechnician(ticket.id, technicianId), 'Technicien assigné');
     }
   }
 
@@ -201,7 +201,7 @@ export class TicketDetail implements OnInit {
     }
     const value = this.partForm.getRawValue();
     if (product.serialTracked && value.unitIds.length === 0) {
-      this.notifications.error(null, 'Choisissez les unites (IMEI / numero de serie) utilisees.');
+      this.notifications.error(null, 'Choisissez les unités (IMEI / numéro de série) utilisées.');
       return;
     }
     this.run(
@@ -211,7 +211,7 @@ export class TicketDetail implements OnInit {
           quantity: product.serialTracked ? value.unitIds.length : value.quantity,
           unitIds: product.serialTracked ? value.unitIds : null,
         }),
-      'Piece ajoutee (sortie de stock)',
+      'Pièce ajoutée (sortie de stock)',
       () => {
         this.partProduct.set(null);
         this.partPicker()?.clear();
@@ -221,13 +221,13 @@ export class TicketDetail implements OnInit {
 
   protected removePart(partId: number, label: string): void {
     confirmAction(this.dialog, {
-      title: 'Retirer la piece',
+      title: 'Retirer la pièce',
       message: `"${label}" sera remise en stock.`,
       confirmLabel: 'Retirer',
     })
       .pipe(filter(Boolean))
       .subscribe(() =>
-        this.run((ticket) => this.afterSalesService.removePart(ticket.id, partId), 'Piece retiree et remise en stock'),
+        this.run((ticket) => this.afterSalesService.removePart(ticket.id, partId), 'Pièce retirée et remise en stock'),
       );
   }
 
@@ -240,7 +240,7 @@ export class TicketDetail implements OnInit {
     }
     askPayment(this.dialog, { title: `Encaisser - ${ticket.ticketNumber}`, amountDue: ticket.amountDue })
       .pipe(filter((payment): payment is PaymentRequest => !!payment))
-      .subscribe((payment) => this.run((t) => this.afterSalesService.pay(t.id, payment), 'Paiement enregistre'));
+      .subscribe((payment) => this.run((t) => this.afterSalesService.pay(t.id, payment), 'Paiement enregistré'));
   }
 
   /** Livraison : encaisse d'abord le reste du (le ticket doit etre solde), sinon simple confirmation. */
@@ -251,7 +251,7 @@ export class TicketDetail implements OnInit {
     }
     const payments$: Observable<PaymentRequest[]> =
       ticket.amountDue > 0
-        ? askPayment(this.dialog, { title: `Reglement - ${ticket.ticketNumber}`, amountDue: ticket.amountDue }).pipe(
+        ? askPayment(this.dialog, { title: `Règlement - ${ticket.ticketNumber}`, amountDue: ticket.amountDue }).pipe(
             switchMap((payment) => (payment ? [[payment]] : EMPTY)),
           )
         : confirmAction(this.dialog, {
@@ -271,11 +271,11 @@ export class TicketDetail implements OnInit {
     }
     askReason(this.dialog, {
       title: `Annuler le ticket ${ticket.ticketNumber}`,
-      message: 'Les pieces utilisees seront remises en stock. Les paiements restent dans l\'historique.',
+      message: 'Les pièces utilisées seront remises en stock. Les paiements restent dans l\'historique.',
       confirmLabel: 'Annuler le ticket',
     })
       .pipe(filter((reason): reason is string => !!reason))
-      .subscribe((reason) => this.run((t) => this.afterSalesService.cancel(t.id, reason), 'Ticket annule'));
+      .subscribe((reason) => this.run((t) => this.afterSalesService.cancel(t.id, reason), 'Ticket annulé'));
   }
 
   // ------------------------------------------------------------------ outils

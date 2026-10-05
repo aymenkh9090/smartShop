@@ -130,6 +130,21 @@ curl -s -X POST localhost:8080/api/auth/login -H 'Content-Type: application/json
 curl -s localhost:8080/api/auth/me -H "Authorization: Bearer <accessToken>"
 ```
 
+### Gestion des utilisateurs (ADMIN)
+
+Écran **Administration > Utilisateurs** dans l'application, API `/api/users` réservée aux ADMIN (403 pour les autres rôles, avant toute validation du corps).
+
+| Méthode | URL | Description |
+|---|---|---|
+| GET | `/api/users?q=&role=&enabled=` | liste paginée (recherche sur identifiant, email, nom, prénom) |
+| GET | `/api/users/{id}` | détail |
+| POST | `/api/users` | crée un compte (`username, email, password, firstName, lastName, role`) → `201` + `Location` |
+| PUT | `/api/users/{id}` | modifie `email, firstName, lastName, role` (l'identifiant n'est pas modifiable) |
+| PATCH | `/api/users/{id}/status` | `{"active": false}` désactive (sessions révoquées), `true` réactive |
+| PUT | `/api/users/{id}/password` | `{"password": "..."}` réinitialise le mot de passe (sessions révoquées) |
+
+Règles : pas de suppression (le compte reste dans l'historique) ; un ADMIN ne peut ni se désactiver ni changer son propre rôle ; il reste toujours au moins un ADMIN actif (verrou sur les ADMIN actifs pendant la vérification). Un compte désactivé ne peut plus se connecter ni rafraîchir son token ; son access token en cours reste valable jusqu'à son expiration (`JWT_ACCESS_TOKEN_TTL`, 15 min par défaut).
+
 ### Fonctionnement des tokens
 
 - **Access token** : JWT HS256 valable 15 min (`JWT_ACCESS_TOKEN_TTL`), il porte le rôle.
@@ -166,6 +181,7 @@ Matrice cible (appliquée avec `@PreAuthorize` au fil des phases) :
 - **Listes paginées** : `?page=0&size=20&sort=name,asc` (taille maximale 100), réponse `{content, page, size, totalElements, totalPages}`.
 - **Filtres** : `q` (recherche « contient », insensible à la casse) et `active=true|false`. Pour les produits, également `categoryId` et `type`.
 - **Pas de suppression** des produits, clients et fournisseurs : ils sont désactivés, car les ventes, achats et crédits les référenceront.
+- **Saisie simple d'un produit** : seuls le nom, la catégorie, le type et le prix de vente sont obligatoires. Sans SKU, un SKU `PRD-NNNNNN` est généré. Valeurs par défaut : état `NEW`, prix d'achat et seuil à 0, suivi à l'unité activé pour un `SMARTPHONE`. En modification, un champ absent conserve sa valeur.
 - **Quantité en stock** : en lecture seule. Elle vaut 0 à la création et ne change que par les mouvements de stock (phase 4). Un champ `quantity` envoyé dans une requête est ignoré.
 - **Normalisation** :
   - SKU, code-barres, CIN et matricule fiscal en majuscules ;
@@ -192,12 +208,12 @@ Matrice cible (appliquée avec `@PreAuthorize` au fil des phases) :
   - `STOCK_IN`, `STOCK_OUT` et `RETURN` : quantité positive ;
   - `ADJUSTMENT` : variation signée, non nulle.
 - **Motif** : obligatoire sauf pour une entrée. Une entrée est refusée sur un produit désactivé. Un stock insuffisant renvoie 409.
-- **Produits suivis à l'unité** :
-  - une entrée crée une unité par article (`units`, avec un IMEI valide — 15 chiffres et clé de Luhn — et/ou un numéro de série) ;
-  - une sortie ou un retour désigne les unités existantes (`unitIds`) ;
-  - la quantité reste toujours égale au nombre d'unités `IN_STOCK` ;
-  - pour ces produits, `serialTracked` n'est plus modifiable tant qu'il reste du stock.
-- **Inventaire** : il ne concerne que les produits non suivis ; les produits suivis s'ajustent unité par unité.
+- **Produits suivis à l'unité** (téléphones…) : **l'IMEI est facultatif**, seul le stock du modèle est toujours contrôlé.
+  - une entrée crée une unité par IMEI / numéro de série fourni (`units`, au plus un par article ; IMEI valide = 15 chiffres et clé de Luhn) ; les autres articles sont « anonymes » ;
+  - une sortie ou un retour peut désigner les unités concernées (`unitIds`, au plus la quantité) ;
+  - invariant : nombre d'unités `IN_STOCK` ≤ quantité. Un article sorti sans IMEI est pris parmi les anonymes ; s'il n'en reste plus, l'IMEI doit être désigné (400) ;
+  - le suivi à l'unité peut être activé à tout moment, mais pas désactivé tant qu'il reste du stock.
+- **Inventaire** : tous les produits ; pour un produit suivi, le comptage ne peut pas être inférieur au nombre d'unités identifiées en stock.
 
 ## Ventes et achats (phase 5)
 
@@ -220,26 +236,29 @@ Matrice cible (appliquée avec `@PreAuthorize` au fil des phases) :
   - la somme des paiements ne peut pas dépasser le total.
 - **Paiements** : enregistrés séparément (montant, moyen, référence, auteur, date) et immuables. Statut `PAID`, `PARTIALLY_PAID` ou `UNPAID`.
 - **Vente à crédit** : une vente avec un reste dû **exige un client** et peut porter une échéance (`dueDate`). Le module crédits (phase 6) s'appuiera sur ces soldes.
-- **Produits suivis à l'unité** : la vente désigne les IMEI vendus (`unitIds`), qui passent à `SOLD`. La garantie (mois) est copiée sur la ligne pour le SAV.
+- **Produits suivis à l'unité** : la vente peut désigner les IMEI vendus (`unitIds`, facultatif), qui passent à `SOLD`. La garantie (mois) est copiée sur la ligne pour le SAV.
 - **Annulation** : le stock est restitué (mouvements `RETURN`), les IMEI repassent en stock, et la vente reste dans l'historique avec le statut `CANCELLED`. Les remboursements éventuels ne sont pas encore gérés par l'application.
-- **Achat** : alimente le stock (création des IMEI) et met à jour le **dernier prix d'achat** du produit. Un reste dû constitue un crédit fournisseur.
+- **Achat** : alimente le stock (création des IMEI fournis, facultatifs) et met à jour le **dernier prix d'achat** du produit. Un reste dû constitue un crédit fournisseur.
 - **Références** : `V-AAAA-NNNNNN` et `A-AAAA-NNNNNN`, générées par séquence PostgreSQL. Une opération refusée consomme quand même un numéro, la numérotation peut donc présenter des trous.
 
 ## Crédits (phase 6)
 
 | Méthode | URL | Accès | Description |
 |---|---|---|---|
-| GET | `/api/customer-credits` | SELLER | crédits clients (`q`, `customerId`, `status`, `open=true` pour les non soldés) |
+| GET | `/api/customer-credits` | SELLER | tous les crédits clients, ventes à crédit et crédits saisis (`q`, `customerId`, `status`, `open=true` pour les non soldés) ; chaque ligne porte `source` (`SALE` / `MANUAL`) et `id` |
 | GET | `/api/customer-credits/balances` | SELLER | solde par client : encours, part en retard, prochaine échéance (`customerId` facultatif) |
-| GET | `/api/customer-credits/{saleId}` | SELLER | détail et historique des paiements |
-| POST | `/api/customer-credits/{saleId}/payments` | SELLER | encaissement (`amount`, `method`, `reference`) |
-| PATCH | `/api/customer-credits/{saleId}/due-date` | MANAGER | report ou suppression de l'échéance |
-| GET, POST, PATCH | `/api/supplier-credits/...` | MANAGER | mêmes opérations pour les achats (`purchaseId`, `supplierId`) |
+| POST | `/api/customer-credits` | SELLER | **crédit saisi à la main** : `customerId`, `amount` (reste à payer), `creditDate` (défaut : aujourd'hui), `dueDate` et `description` facultatifs |
+| GET | `/api/customer-credits/{saleId}` · `/manual/{id}` | SELLER | détail et historique des paiements |
+| POST | `/api/customer-credits/{saleId}/payments` · `/manual/{id}/payments` | SELLER | versement d'une tranche : `amount`, `method` (défaut `CASH`), `reference`, `paidOn` (date du versement, défaut : aujourd'hui) |
+| PATCH | `/api/customer-credits/{saleId}/due-date` · `/manual/{id}/due-date` | MANAGER | report ou suppression de l'échéance |
+| POST | `/api/customer-credits/manual/{id}/cancel` | MANAGER | annulation d'un crédit saisi par erreur (`reason`), impossible après un paiement |
+| GET, POST, PATCH | `/api/supplier-credits/...` | MANAGER | mêmes opérations pour les fournisseurs (`{purchaseId}`, `supplierId`) |
 
 **Règles :**
-- **Définition** : un crédit est une vente ou un achat **non soldé à sa création** (`on_credit`). Il reste visible une fois réglé, avec le statut `PAID`, ce qui conserve l'historique.
+- **Définition** : un crédit est une vente ou un achat **non soldé à sa création** (`on_credit`), ou un **crédit saisi à la main** (tables `customer_credit` / `supplier_credit`, références `CC-AAAA-NNNNNN` / `CF-AAAA-NNNNNN`). Il reste visible une fois réglé, avec le statut `PAID`, ce qui conserve l'historique. Listes, soldes et tableau de bord lisent une vue unifiée (`CustomerCreditEntry` / `SupplierCreditEntry`, `@Subselect`).
+- **Dates** : chaque versement garde sa date déclarée (`paidOn`, ni future ni antérieure à la date du crédit) et sa date de saisie (`recorded_at` pour les crédits saisis).
 - **Reste dû** : il n'est jamais modifié directement. C'est toujours `total - somme des paiements`, et chaque paiement est enregistré séparément et immuable (montant, moyen, référence, auteur, date).
-- **Statut calculé** : `CANCELLED` (vente annulée) > `PAID` > `OVERDUE` (échéance dépassée, la date du jour suivant le fuseau `Africa/Tunis`, paramétrable avec `smartshop.business-zone`) > `PARTIALLY_PAID` > `PENDING`. Le filtre SQL et le calcul Java sont testés pour chaque statut.
+- **Statut calculé** : `CANCELLED` (vente ou crédit saisi annulé) > `PAID` > `OVERDUE` (échéance dépassée, la date du jour suivant le fuseau `Africa/Tunis`, paramétrable avec `smartshop.business-zone`) > `PARTIALLY_PAID` > `PENDING`. Le filtre SQL et le calcul Java sont testés pour chaque statut.
 - **Contrôles des paiements** :
   - un paiement est refusé s'il dépasse le reste dû (400), ou si la vente est annulée ou déjà soldée (409) ;
   - les paiements sont sérialisés par un verrou pessimiste ; un test de concurrence vérifie qu'aucun trop-perçu n'est possible.

@@ -65,7 +65,7 @@ public class CategoryService {
         long products = productRepository.countByCategoryId(id);
         if (products > 0) {
             throw new BusinessException(
-                    "Categorie utilisee par %d produit(s) : impossible de la supprimer".formatted(products));
+                    "Catégorie utilisée par %d produit(s) : impossible de la supprimer".formatted(products));
         }
         categoryRepository.delete(category);
     }
@@ -74,10 +74,10 @@ public class CategoryService {
     @Transactional(readOnly = true)
     public Category getEntity(Long id) {
         return categoryRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Categorie", id));
+                .orElseThrow(() -> new ResourceNotFoundException("Catégorie", id));
     }
 
     private static BusinessException duplicateName(String name) {
-        return new BusinessException("Une categorie nommee '%s' existe deja".formatted(name));
+        return new BusinessException("Une catégorie nommée '%s' existe déjà".formatted(name));
     }
 }

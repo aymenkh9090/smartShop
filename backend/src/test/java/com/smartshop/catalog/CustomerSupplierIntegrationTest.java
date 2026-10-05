@@ -36,7 +36,7 @@ class CustomerSupplierIntegrationTest extends AbstractIntegrationTest {
         postAs(SELLER, "/api/customers", customerJson("22333444", null, null)).andExpect(status().isCreated());
         postAs(SELLER, "/api/customers", customerJson("22 333 444", null, null))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("Un client avec le telephone '22333444' existe deja"));
+                .andExpect(jsonPath("$.message").value("Un client avec le téléphone '22333444' existe déjà"));
     }
 
     @Test
@@ -82,7 +82,7 @@ class CustomerSupplierIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.email").value("new@mail.tn"));
         putAs(SELLER, "/api/customers/" + first, customerJson("98 765 432", null, null))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("Un client avec le telephone '98765432' existe deja"));
+                .andExpect(jsonPath("$.message").value("Un client avec le téléphone '98765432' existe déjà"));
     }
 
     @Test
@@ -121,7 +121,7 @@ class CustomerSupplierIntegrationTest extends AbstractIntegrationTest {
                 .andReturn().getResponse().getContentAsString(), "$.id")).longValue();
         putAs(MANAGER, "/api/suppliers/" + other, supplierJson("techdistrib", null))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("Un fournisseur avec le nom 'techdistrib' existe deja"));
+                .andExpect(jsonPath("$.message").value("Un fournisseur avec le nom 'techdistrib' existe déjà"));
     }
 
     // ---------- helpers ----------

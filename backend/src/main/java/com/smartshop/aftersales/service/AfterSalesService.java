@@ -60,7 +60,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AfterSalesService {
 
-    static final String PART_REMOVED_REASON = "piece retiree du ticket";
+    static final String PART_REMOVED_REASON = "pièce retirée du ticket";
 
     private final AfterSalesTicketRepository ticketRepository;
     private final CustomerService customerService;

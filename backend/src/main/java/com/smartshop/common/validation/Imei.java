@@ -18,7 +18,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Imei {
 
-    String message() default "IMEI invalide (15 chiffres avec cle de controle)";
+    String message() default "IMEI invalide (15 chiffres avec clé de contrôle)";
 
     Class<?>[] groups() default {};
 

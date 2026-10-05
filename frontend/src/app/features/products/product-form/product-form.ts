@@ -1,8 +1,9 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatExpansionModule } from '@angular/material/expansion';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
@@ -23,7 +24,7 @@ import {
 } from '../product.models';
 import { ProductService } from '../product.service';
 
-const CODE_PATTERN = /^\s*[A-Za-z0-9._-]+\s*$/;
+const CODE_PATTERN = /^\s*[A-Za-z0-9._-]*\s*$/;
 const BARCODE_PATTERN = /^\s*[A-Za-z0-9-]*\s*$/;
 
 @Component({
@@ -35,10 +36,16 @@ const BARCODE_PATTERN = /^\s*[A-Za-z0-9-]*\s*$/;
     MatInputModule,
     MatSelectModule,
     MatCheckboxModule,
+    MatExpansionModule,
     MatButtonModule,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './product-form.html',
+  styles: `
+    .details {
+      margin: 1rem 0;
+    }
+  `,
 })
 export class ProductForm implements OnInit {
   private readonly productService = inject(ProductService);
@@ -62,7 +69,7 @@ export class ProductForm implements OnInit {
   protected readonly form = new FormGroup({
     sku: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required, Validators.maxLength(50), Validators.pattern(CODE_PATTERN)],
+      validators: [Validators.maxLength(50), Validators.pattern(CODE_PATTERN)],
     }),
     barcode: new FormControl('', {
       nonNullable: true,
@@ -76,7 +83,7 @@ export class ProductForm implements OnInit {
     condition: new FormControl<ProductCondition>('NEW', { nonNullable: true, validators: Validators.required }),
     brand: new FormControl('', { nonNullable: true, validators: Validators.maxLength(100) }),
     model: new FormControl('', { nonNullable: true, validators: Validators.maxLength(100) }),
-    purchasePrice: new FormControl<number | null>(null, [Validators.required, Validators.min(0)]),
+    purchasePrice: new FormControl<number | null>(null, Validators.min(0)),
     salePrice: new FormControl<number | null>(null, [Validators.required, Validators.min(0)]),
     minStock: new FormControl(0, {
       nonNullable: true,
@@ -85,6 +92,16 @@ export class ProductForm implements OnInit {
     serialTracked: new FormControl(false, { nonNullable: true }),
     warrantyMonths: new FormControl<number | null>(null, [Validators.min(0), Validators.max(120)]),
   });
+
+  constructor() {
+    // Un smartphone est suivi a l'unite par defaut (IMEI facultatif), sauf choix explicite
+    this.form.controls.type.valueChanges.pipe(takeUntilDestroyed()).subscribe((type) => {
+      const serialTracked = this.form.controls.serialTracked;
+      if (!this.isEdit() && !serialTracked.dirty) {
+        serialTracked.setValue(type === 'SMARTPHONE');
+      }
+    });
+  }
 
   ngOnInit(): void {
     const id = this.id();
@@ -112,12 +129,13 @@ export class ProductForm implements OnInit {
     }
     this.submitting.set(true);
     // Les validateurs garantissent la presence des champs obligatoires
-    const request = this.form.getRawValue() as ProductRequest;
+    const value = this.form.getRawValue();
+    const request = { ...value, sku: value.sku.trim() || null } as ProductRequest;
     const id = this.id();
     const save$ = id ? this.productService.update(Number(id), request) : this.productService.create(request);
     save$.subscribe({
       next: () => {
-        this.notifications.success(id ? 'Produit modifie' : 'Produit cree');
+        this.notifications.success(id ? 'Produit modifié' : 'Produit créé');
         void this.router.navigate(['/products']);
       },
       error: (error: unknown) => {

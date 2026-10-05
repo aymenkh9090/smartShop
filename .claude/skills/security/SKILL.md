@@ -10,7 +10,8 @@ description: Regles de securite SmartShop - authentification JWT, roles, autoris
 - Mots de passe : `PasswordEncoder` (BCrypt) uniquement. Jamais loggues, jamais renvoyes dans un DTO.
 - Roles : `ADMIN`, `MANAGER`, `SELLER`, `TECHNICIAN`. Definir la matrice de permissions avant d'ecrire l'endpoint.
 - Autorisation : `@PreAuthorize` sur les controllers/services ; tout est `authenticated()` par defaut dans `SecurityConfig`.
-- Seuls `POST /api/auth/login`, `/api/auth/refresh`, `/api/auth/logout` sont publics. `/api/auth/register` est reserve aux ADMIN. Tout nouvel endpoint public doit etre justifie.
+- Seuls `POST /api/auth/login`, `/api/auth/refresh`, `/api/auth/logout` sont publics. `/api/auth/register` et `/api/users/**` sont reserves aux ADMIN (aussi dans `authorizeHttpRequests`). Tout nouvel endpoint public doit etre justifie.
+- Comptes (`UserService`) : desactivation et reinitialisation du mot de passe revoquent les refresh tokens ; un ADMIN ne se desactive pas et ne change pas son propre role ; toujours au moins un ADMIN actif (`lockActiveAdmins()` avant le controle).
 - Hierarchie (`SecurityConfig.roleHierarchy`) : ADMIN > MANAGER > SELLER / TECHNICIAN. Ecrire `hasRole('SELLER')` (pas la liste de tous les roles). Matrice cible dans le README.
 - Piege : `@Valid` s'execute AVANT `@PreAuthorize`. Pour un endpoint sensible, ajouter aussi la regle dans `authorizeHttpRequests` afin qu'un non-autorise recoive 403 et non un detail de validation.
 - Refresh tokens : opaques, stockes hashes (SHA-256), a usage unique (rotation) ; rejouer un token revoque revoque toutes les sessions de l'utilisateur.

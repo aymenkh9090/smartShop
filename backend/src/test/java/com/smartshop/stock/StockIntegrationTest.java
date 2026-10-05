@@ -155,18 +155,36 @@ class StockIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isCreated());
         move(MANAGER, productId, "STOCK_IN", 1, null, "[{\"imei\":\"%s\"}]".formatted(imei), null)
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("IMEI deja enregistre(s) : " + imei));
+                .andExpect(jsonPath("$.message").value("IMEI déjà enregistré(s) : " + imei));
         assertUnitsMatchQuantity(productId);
     }
 
     @Test
-    void serialTracking_cannotChangeWhileInStock() throws Exception {
+    void serialTracking_canBeEnabledButNotDisabledWhileInStock() throws Exception {
         long productId = createProduct("CAB-1", false, 1);
         move(MANAGER, productId, "STOCK_IN", 1, null, null, null);
 
         putAs(MANAGER, "/api/products/" + productId, productJson("CAB-1", true, 1))
+                .andExpect(status().isOk());
+        putAs(MANAGER, "/api/products/" + productId, productJson("CAB-1", false, 1))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value(containsString("suivi a l'unite")));
+                .andExpect(jsonPath("$.message").value(containsString("suivi à l'unité")));
+    }
+
+    @Test
+    void serializedProduct_mixesIdentifiedAndAnonymousItems() throws Exception {
+        long productId = createProduct("SM-9", true, 0);
+        String imei = TestImeis.valid(91);
+        move(MANAGER, productId, "STOCK_IN", 3, null, "[{\"imei\":\"%s\"}]".formatted(imei), null)
+                .andExpect(status().isCreated());
+
+        // 2 articles sans IMEI peuvent sortir sans designation...
+        move(MANAGER, productId, "STOCK_OUT", 2, "Casse", null, null).andExpect(status().isCreated());
+        // ...mais pas le dernier, qui a un IMEI enregistre
+        move(MANAGER, productId, "STOCK_OUT", 1, "Casse", null, null)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(containsString("sans IMEI")));
+        getAs(SELLER, "/api/products/" + productId).andExpect(jsonPath("$.quantity").value(1));
     }
 
     // ---------- inventaire ----------
@@ -196,14 +214,16 @@ class StockIntegrationTest extends AbstractIntegrationTest {
     void inventory_isAllOrNothing() throws Exception {
         long simple = createProduct("A-1", false, 0);
         long serialized = createProduct("SM-1", true, 0);
+        move(MANAGER, serialized, "STOCK_IN", 1, null, "[{\"imei\":\"%s\"}]".formatted(TestImeis.valid(92)), null);
 
+        // Le produit suivi a 1 unite identifiee en stock : un comptage a 0 est refuse et annule tout
         postAs(MANAGER, "/api/stock/inventory", """
-                {"lines":[{"productId":%d,"countedQuantity":5},{"productId":%d,"countedQuantity":1}]}
+                {"lines":[{"productId":%d,"countedQuantity":5},{"productId":%d,"countedQuantity":0}]}
                 """.formatted(simple, serialized))
                 .andExpect(status().isBadRequest());
 
         getAs(SELLER, "/api/products/" + simple).andExpect(jsonPath("$.quantity").value(0));
-        getAs(SELLER, "/api/stock/movements").andExpect(jsonPath("$.totalElements").value(0));
+        getAs(SELLER, "/api/stock/movements").andExpect(jsonPath("$.totalElements").value(1));
     }
 
     // ---------- concurrence ----------

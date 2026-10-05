@@ -32,6 +32,7 @@ describe('SaleForm', () => {
     total(): number;
     remaining(): number;
     blockingError(): string | null;
+    syncQuantity(line: SaleForm['form']['controls']['lines']['controls'][number]): void;
     submit(): void;
   }
 
@@ -78,7 +79,7 @@ describe('SaleForm', () => {
   it('blocks a credit sale without customer, then allows it once a customer is chosen', () => {
     c().addProduct(product(1, 100, 5));
     pay(40);
-    expect(c().blockingError()).toContain('selectionnez un client');
+    expect(c().blockingError()).toContain('sélectionnez un client');
 
     c().selectCustomer(CUSTOMER);
     expect(c().blockingError()).toBeNull();
@@ -92,7 +93,7 @@ describe('SaleForm', () => {
   it('blocks an overpayment and an excessive discount', () => {
     c().addProduct(product(1, 100, 5));
     pay(150);
-    expect(c().blockingError()).toContain('depasse le total');
+    expect(c().blockingError()).toContain('dépasse le total');
 
     c().form.controls.payments.clear();
     c().form.controls.discount.setValue(120);
@@ -109,24 +110,37 @@ describe('SaleForm', () => {
     expect(notifications.error).toHaveBeenCalledTimes(2);
   });
 
-  it('derives the quantity of a serialized line from the selected IMEI units', () => {
+  it('sells a serialized product by quantity, without IMEI', () => {
     c().addProduct(product(4, 1299.5, 3, true));
-    const line = c().form.controls.lines.at(0);
-    line.controls.unitIds.setValue([11, 12]);
+    c().form.controls.lines.at(0).controls.quantity.setValue(2);
     pay(2599);
 
     expect(c().subtotal()).toBe(2599);
     c().submit();
 
+    expect(sales.create.calls.mostRecent().args[0].items).toEqual([{ productId: 4, quantity: 2, unitIds: null }]);
+  });
+
+  it('sends the selected IMEI units, raising the quantity if needed', () => {
+    c().addProduct(product(4, 1299.5, 3, true));
+    const line = c().form.controls.lines.at(0);
+    line.controls.unitIds.setValue([11, 12]);
+    c().syncQuantity(line);
+    pay(2599);
+
+    expect(line.controls.quantity.value).toBe(2);
+    c().submit();
+
     expect(sales.create.calls.mostRecent().args[0].items).toEqual([{ productId: 4, quantity: 2, unitIds: [11, 12] }]);
   });
 
-  it('requires at least one unit for a serialized line', () => {
+  it('refuses more IMEI than the quantity', () => {
     c().addProduct(product(4, 1299.5, 3, true));
+    c().selectCustomer(CUSTOMER);
+    const line = c().form.controls.lines.at(0);
+    line.controls.unitIds.setValue([11, 12]);
 
-    c().submit();
-
-    expect(sales.create).not.toHaveBeenCalled();
+    expect(c().blockingError()).toContain("plus d'IMEI");
   });
 
   it('sends a due date only when a balance remains', () => {

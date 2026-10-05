@@ -123,7 +123,7 @@ class AfterSalesTicketTest {
         assertThat(ticket.getPaymentStatus()).isEqualTo(PaymentStatus.PARTIALLY_PAID);
         assertThatThrownBy(() -> diagnose(ticket, "30"))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("deja paye");
+                .hasMessageContaining("déjà payé");
     }
 
     @Test
@@ -133,7 +133,7 @@ class AfterSalesTicketTest {
 
         assertThatThrownBy(() -> ticket.receivePayment(new BigDecimal("50.001"), PaymentMethod.CASH, null, TECH, NOW))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("depasse le reste du");
+                .hasMessageContaining("dépasse le reste dû");
         assertThat(ticket.getPayments()).isEmpty();
     }
 
@@ -143,7 +143,7 @@ class AfterSalesTicketTest {
 
         assertThatThrownBy(() -> ticket.addPart(product(1L, "10"), 1, List.of(), TECH, NOW))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("Pieces modifiables");
+                .hasMessageContaining("Pièces modifiables");
     }
 
     @Test
@@ -152,7 +152,7 @@ class AfterSalesTicketTest {
 
         assertThatThrownBy(() -> ticket.deliver(null, TECH, NOW))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("Reste a payer");
+                .hasMessageContaining("Reste à payer");
 
         ticket.receivePayment(new BigDecimal("80"), PaymentMethod.CARD, null, TECH, NOW);
         ticket.deliver("Remis au client", TECH, NOW);
@@ -168,7 +168,7 @@ class AfterSalesTicketTest {
 
         assertThatThrownBy(() -> ticket.deliver(null, TECH, NOW))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("pret");
+                .hasMessageContaining("prêt");
     }
 
     @Test
@@ -216,7 +216,7 @@ class AfterSalesTicketTest {
     private static Product product(Long id, String salePrice) {
         Product product = new Product();
         ReflectionTestUtils.setField(product, "id", id);
-        product.setName("Piece " + id);
+        product.setName("Pièce " + id);
         product.setSalePrice(new BigDecimal(salePrice));
         return product;
     }

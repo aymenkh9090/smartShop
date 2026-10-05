@@ -1,12 +1,15 @@
 <div class="page-header">
-  <h2>Credits fournisseurs{{ supplierId() ? ' (fournisseur)' : '' }}</h2>
-  <a mat-stroked-button routerLink="/supplier-credits/balances"><mat-icon>account_balance_wallet</mat-icon> Soldes par fournisseur</a>
+  <h2>Crédits fournisseurs{{ supplierId() ? ' (fournisseur)' : '' }}</h2>
+  <div>
+    <a mat-stroked-button routerLink="/supplier-credits/balances"><mat-icon>account_balance_wallet</mat-icon> Soldes par fournisseur</a>
+    <a mat-flat-button routerLink="/supplier-credits/new"><mat-icon>add</mat-icon> Nouveau crédit</a>
+  </div>
 </div>
 
 <form class="filters" [formGroup]="filters">
   <mat-form-field class="search">
     <mat-label>Rechercher</mat-label>
-    <input matInput formControlName="q" placeholder="Reference, facture, fournisseur..." />
+    <input matInput formControlName="q" placeholder="Référence, facture, fournisseur..." />
     <mat-icon matSuffix>search</mat-icon>
   </mat-form-field>
   <mat-form-field>
@@ -31,8 +34,11 @@
       <td mat-cell *matCellDef="let c">{{ c.createdAt | date: 'dd/MM/yyyy' }}</td>
     </ng-container>
     <ng-container matColumnDef="reference">
-      <th mat-header-cell *matHeaderCellDef>Achat</th>
-      <td mat-cell *matCellDef="let c"><a [routerLink]="['/supplier-credits', c.purchaseId]">{{ c.reference }}</a></td>
+      <th mat-header-cell *matHeaderCellDef>Référence</th>
+      <td mat-cell *matCellDef="let c">
+        <a [routerLink]="link(c)">{{ c.reference }}</a>
+        <div class="mat-caption">{{ c.source === 'PURCHASE' ? 'Achat' : (c.description || 'Crédit saisi') }}</div>
+      </td>
     </ng-container>
     <ng-container matColumnDef="party">
       <th mat-header-cell *matHeaderCellDef>Fournisseur</th>
@@ -52,13 +58,13 @@
       <td mat-cell *matCellDef="let c"><strong>{{ c.amountDue | currency: 'TND' : 'symbol' : '1.3-3' }}</strong></td>
     </ng-container>
     <ng-container matColumnDef="dueDate">
-      <th mat-header-cell *matHeaderCellDef>Echeance</th>
+      <th mat-header-cell *matHeaderCellDef>Échéance</th>
       <td mat-cell *matCellDef="let c">{{ c.dueDate ? (c.dueDate | date: 'dd/MM/yyyy') : '-' }}</td>
     </ng-container>
     <ng-container matColumnDef="status">
       <th mat-header-cell *matHeaderCellDef>Statut</th>
       <td mat-cell *matCellDef="let c">
-        <span class="badge" [class.warn]="c.status === 'OVERDUE'" [class.muted]="c.status === 'PAID' || c.status === 'CANCELLED'">
+        <span class="badge" [class.danger]="c.status === 'OVERDUE'" [class.success]="c.status === 'PAID'" [class.muted]="c.status === 'CANCELLED'">
           {{ statusLabel(c.status) }}
         </span>
       </td>
@@ -77,7 +83,7 @@
     <tr mat-header-row *matHeaderRowDef="columns"></tr>
     <tr mat-row *matRowDef="let row; columns: columns"></tr>
     <tr class="mat-mdc-row" *matNoDataRow>
-      <td class="no-data" [attr.colspan]="columns.length">Aucun credit.</td>
+      <td class="no-data" [attr.colspan]="columns.length">Aucun crédit.</td>
     </tr>
   </table>
   <mat-paginator [length]="page().totalElements" [pageIndex]="query().page" [pageSize]="query().size"

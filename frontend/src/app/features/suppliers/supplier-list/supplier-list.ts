@@ -110,9 +110,9 @@ export class SupplierList {
     const activate = !item.active;
     const label = item.name;
     confirmAction(this.dialog, {
-      title: activate ? 'Reactiver le fournisseur' : 'Desactiver le fournisseur',
-      message: activate ? `Reactiver "${label}" ?` : `Desactiver "${label}" ? L'historique est conserve.`,
-      confirmLabel: activate ? 'Reactiver' : 'Desactiver',
+      title: activate ? 'Réactiver le fournisseur' : 'Désactiver le fournisseur',
+      message: activate ? `Réactiver "${label}" ?` : `Désactiver "${label}" ? L'historique est conservé.`,
+      confirmLabel: activate ? 'Réactiver' : 'Désactiver',
     })
       .pipe(
         filter(Boolean),
@@ -120,7 +120,7 @@ export class SupplierList {
       )
       .subscribe({
         next: () => {
-          this.notifications.success(activate ? 'Fournisseur reactive' : 'Fournisseur desactive');
+          this.notifications.success(activate ? 'Fournisseur réactivé' : 'Fournisseur désactivé');
           this.query.update((query) => ({ ...query }));
         },
         error: (error: unknown) => this.notifications.error(error),

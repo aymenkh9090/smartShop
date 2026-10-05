@@ -55,7 +55,7 @@ class CustomerServiceTest {
 
         assertThatThrownBy(() -> service.create(request("22 333 444", null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("telephone");
+                .hasMessageContaining("téléphone");
         verify(customerRepository, never()).save(any());
     }
 

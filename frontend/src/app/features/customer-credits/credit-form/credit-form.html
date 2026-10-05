@@ -1,0 +1,56 @@
+<div class="page-header">
+  <h2>Nouveau crédit client</h2>
+</div>
+
+<form class="form-card credit-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  <div class="party">
+    @if (customer(); as c) {
+      <div class="selected-party">
+        <mat-icon>person</mat-icon>
+        <span>{{ c.lastName }} {{ c.firstName }} - {{ c.phone }}</span>
+        <button mat-icon-button type="button" (click)="clearCustomer()" aria-label="Changer de client">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    } @else {
+      <app-customer-picker label="Client" (selected)="selectCustomer($event)" />
+      @if (customerMissing()) {
+        <p class="field-error" role="alert">Sélectionnez un client.</p>
+      }
+    }
+  </div>
+
+  <div class="form-grid">
+    <mat-form-field>
+      <mat-label>Reste à payer (DT)</mat-label>
+      <input matInput type="number" min="0.001" step="0.001" formControlName="amount" />
+      <mat-error>{{ errorOf(form.controls.amount) }}</mat-error>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Date du crédit</mat-label>
+      <input matInput [matDatepicker]="creditPicker" [max]="today" formControlName="creditDate" />
+      <mat-datepicker-toggle matIconSuffix [for]="creditPicker" />
+      <mat-datepicker #creditPicker />
+      <mat-error>Date obligatoire, pas dans le futur</mat-error>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Échéance (facultatif)</mat-label>
+      <input matInput [matDatepicker]="duePicker" [min]="form.controls.creditDate.value" formControlName="dueDate" />
+      <mat-datepicker-toggle matIconSuffix [for]="duePicker" />
+      <mat-datepicker #duePicker />
+      <mat-error>L'échéance ne peut pas précéder la date du crédit</mat-error>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Objet (facultatif)</mat-label>
+      <input matInput formControlName="description" placeholder="Ex. iPhone 13 128 Go" />
+      <mat-error>{{ errorOf(form.controls.description) }}</mat-error>
+    </mat-form-field>
+  </div>
+
+  <p class="hint">Les versements du client s'enregistrent ensuite sur le crédit : le reste est calculé automatiquement.</p>
+
+  <div class="form-actions">
+    <a mat-button routerLink="/customer-credits">Annuler</a>
+    <button mat-flat-button type="submit" [disabled]="submitting()">Enregistrer le crédit</button>
+  </div>
+</form>

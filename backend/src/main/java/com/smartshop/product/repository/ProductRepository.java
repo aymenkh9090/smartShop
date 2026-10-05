@@ -23,6 +23,10 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
 
     boolean existsBySku(String sku);
 
+    /** Numero des SKU generes automatiquement (produit cree sans SKU). */
+    @Query(value = "select nextval('product_sku_seq')", nativeQuery = true)
+    long nextSkuNumber();
+
     boolean existsBySkuAndIdNot(String sku, Long id);
 
     boolean existsByBarcode(String barcode);

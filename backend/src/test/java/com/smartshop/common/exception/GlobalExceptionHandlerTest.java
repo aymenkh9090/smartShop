@@ -52,7 +52,7 @@ class GlobalExceptionHandlerTest {
     void malformedJsonReturns400() throws Exception {
         mockMvc.perform(post("/fake").contentType(MediaType.APPLICATION_JSON).content("{oops"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Corps de requete illisible ou mal forme"));
+                .andExpect(jsonPath("$.message").value("Corps de requête illisible ou mal formé"));
     }
 
     @Test

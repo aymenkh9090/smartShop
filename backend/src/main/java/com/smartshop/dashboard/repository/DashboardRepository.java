@@ -133,31 +133,26 @@ public class DashboardRepository {
                 .toList();
     }
 
-    /** Credits clients en cours : ventes a credit non soldees et non annulees. */
+    /** Credits clients en cours (ventes a credit et credits saisis) : non soldes et non annules. */
     public Credits customerCredits(LocalDate today) {
-        Object[] row = em.createQuery("""
-                        select count(s), sum(s.total - s.amountPaid),
-                               sum(case when s.dueDate < :today then s.total - s.amountPaid else null end)
-                        from Sale s
-                        where s.onCredit = true and s.status = :completed and s.paymentStatus <> :paid""",
-                        Object[].class)
-                .setParameter("today", today)
-                .setParameter("completed", SaleStatus.COMPLETED)
-                .setParameter("paid", PaymentStatus.PAID)
-                .getSingleResult();
-        return credits(row);
+        return credits(openCredits("CustomerCreditEntry", today));
     }
 
+    /** Credits fournisseurs en cours (achats a credit et credits saisis) : non soldes et non annules. */
     public Credits supplierCredits(LocalDate today) {
-        Object[] row = em.createQuery("""
-                        select count(p), sum(p.total - p.amountPaid),
-                               sum(case when p.dueDate < :today then p.total - p.amountPaid else null end)
-                        from Purchase p
-                        where p.onCredit = true and p.paymentStatus <> :paid""", Object[].class)
+        return credits(openCredits("SupplierCreditEntry", today));
+    }
+
+    private Object[] openCredits(String entryEntity, LocalDate today) {
+        return em.createQuery("""
+                        select count(e), sum(e.total - e.amountPaid),
+                               sum(case when e.dueDate < :today then e.total - e.amountPaid else null end)
+                        from %s e
+                        where e.cancelled = false and e.paymentStatus <> :paid""".formatted(entryEntity),
+                        Object[].class)
                 .setParameter("today", today)
                 .setParameter("paid", PaymentStatus.PAID)
                 .getSingleResult();
-        return credits(row);
     }
 
     /** Tickets en cours par statut ; tous les statuts ouverts sont presents (0 si aucun ticket). */

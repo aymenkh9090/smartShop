@@ -53,11 +53,11 @@ export class Inventory {
   protected addProduct(product: Product): void {
     this.picker().clear();
     if (product.serialTracked) {
-      this.notifications.error(null, `"${product.name}" est suivi a l'unite : ajustez-le par entree / sortie d'unites.`);
+      this.notifications.error(null, `"${product.name}" est suivi à l'unité : ajustez-le par entrée / sortie d'unités.`);
       return;
     }
     if (this.form.controls.lines.controls.some((line) => line.controls.product.value.id === product.id)) {
-      this.notifications.error(null, `"${product.name}" est deja dans l'inventaire.`);
+      this.notifications.error(null, `"${product.name}" est déjà dans l'inventaire.`);
       return;
     }
     this.form.controls.lines.push(
@@ -102,7 +102,7 @@ export class Inventory {
       .subscribe({
         next: (result) => {
           this.notifications.success(
-            `Inventaire enregistre : ${result.adjustedProducts} produit(s) ajuste(s) sur ${result.countedProducts}`,
+            `Inventaire enregistré : ${result.adjustedProducts} produit(s) ajusté(s) sur ${result.countedProducts}`,
           );
           void this.router.navigate(['/stock']);
         },

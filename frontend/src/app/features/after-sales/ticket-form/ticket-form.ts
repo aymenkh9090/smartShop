@@ -94,7 +94,7 @@ export class TicketForm {
     if (this.form.invalid || !customer) {
       this.form.markAllAsTouched();
       if (!customer) {
-        this.notifications.error(null, 'Selectionnez le client.');
+        this.notifications.error(null, 'Sélectionnez le client.');
       }
       return;
     }
@@ -114,7 +114,7 @@ export class TicketForm {
     this.afterSalesService.create(request).subscribe({
       next: (ticket) => {
         this.notifications.success(
-          ticket.underWarranty ? `Ticket ${ticket.ticketNumber} cree (sous garantie)` : `Ticket ${ticket.ticketNumber} cree`,
+          ticket.underWarranty ? `Ticket ${ticket.ticketNumber} créé (sous garantie)` : `Ticket ${ticket.ticketNumber} créé`,
         );
         void this.router.navigate(['/after-sales', ticket.id]);
       },

@@ -144,16 +144,16 @@ public class Sale {
         subtotal = Money.of(items.stream().map(SaleItem::getLineTotal).reduce(BigDecimal.ZERO, BigDecimal::add));
         discount = Money.of(requestedDiscount);
         if (discount.compareTo(subtotal) > 0) {
-            throw invalid("La remise (%s) depasse le sous-total (%s)".formatted(discount, subtotal));
+            throw invalid("La remise (%s) dépasse le sous-total (%s)".formatted(discount, subtotal));
         }
         total = subtotal.subtract(discount);
         amountPaid = Money.of(payments.stream().map(SalePayment::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add));
         if (amountPaid.compareTo(total) > 0) {
-            throw invalid("Le montant paye (%s) depasse le total (%s)".formatted(amountPaid, total));
+            throw invalid("Le montant payé (%s) dépasse le total (%s)".formatted(amountPaid, total));
         }
         paymentStatus = PaymentStatus.of(total, amountPaid);
         if (paymentStatus != PaymentStatus.PAID && customer == null) {
-            throw invalid("Une vente a credit (reste a payer %s) necessite un client".formatted(getAmountDue()));
+            throw invalid("Une vente à crédit (reste à payer %s) nécessite un client".formatted(getAmountDue()));
         }
         dueDate = paymentStatus == PaymentStatus.PAID ? null : requestedDueDate;
         onCredit = paymentStatus != PaymentStatus.PAID;
@@ -166,14 +166,14 @@ public class Sale {
     public SalePayment receivePayment(BigDecimal amount, PaymentMethod method, String reference, User user,
                                       Instant paidAt) {
         if (isCancelled()) {
-            throw new BusinessException("La vente %s est annulee : paiement impossible".formatted(this.reference));
+            throw new BusinessException("La vente %s est annulée : paiement impossible".formatted(this.reference));
         }
         if (paymentStatus == PaymentStatus.PAID) {
-            throw new BusinessException("La vente %s est deja soldee".formatted(this.reference));
+            throw new BusinessException("La vente %s est déjà soldée".formatted(this.reference));
         }
         BigDecimal paid = Money.of(amount);
         if (paid.compareTo(getAmountDue()) > 0) {
-            throw invalid("Le paiement (%s) depasse le reste du (%s)".formatted(paid, getAmountDue()));
+            throw invalid("Le paiement (%s) dépasse le reste dû (%s)".formatted(paid, getAmountDue()));
         }
         SalePayment payment = new SalePayment(this, paid, method, reference, user, paidAt);
         payments.add(payment);
@@ -185,7 +185,7 @@ public class Sale {
     /** Reporte (ou supprime) l'echeance d'un credit non solde. */
     public void reschedule(LocalDate newDueDate) {
         if (isCancelled() || paymentStatus == PaymentStatus.PAID) {
-            throw new BusinessException("Seul un credit en cours peut etre reporte");
+            throw new BusinessException("Seul un crédit en cours peut être reporté");
         }
         dueDate = newDueDate;
     }
@@ -200,7 +200,7 @@ public class Sale {
 
     public void cancel(User user, Instant at, String reason) {
         if (isCancelled()) {
-            throw new BusinessException("La vente %s est deja annulee".formatted(reference));
+            throw new BusinessException("La vente %s est déjà annulée".formatted(reference));
         }
         status = SaleStatus.CANCELLED;
         cancelledBy = user;

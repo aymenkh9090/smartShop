@@ -1,18 +1,21 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { BarController, BarElement, CategoryScale, ChartConfiguration, LinearScale, Tooltip } from 'chart.js';
 import { BaseChartDirective, provideCharts } from 'ng2-charts';
 
+import { ThemeService } from '../../../core/services/theme.service';
 import { fromIsoDate } from '../../../shared/components/reschedule-dialog/reschedule-dialog';
 import { DailyAmount } from '../dashboard.models';
 
 /**
- * Palette de reference dataviz (theme clair uniquement, comme l'application) :
- * serie unique = slot 1, texte et grille en encres neutres. Validee avec scripts/validate_palette.js.
+ * Couleurs du graphique par theme : serie unique = indigo de la marque (clair #4f46e5, sombre #8582ff),
+ * validees avec le script dataviz (bande de luminance, chroma, contraste >= 3:1 sur la surface).
+ * Texte et grille en encres neutres, alignees sur les jetons --app-text-muted / --app-border.
  */
-const SERIES_COLOR = '#2a78d6';
-const TEXT_SECONDARY = '#52514e';
-const GRID_COLOR = '#e4e3df';
+const CHART_COLORS = {
+  light: { series: '#4f46e5', text: '#5b6275', grid: '#e6e8ef' },
+  dark: { series: '#8582ff', text: '#a3a9b8', grid: '#2b2f3a' },
+};
 
 const MONEY = new Intl.NumberFormat('fr', { style: 'currency', currency: 'TND', minimumFractionDigits: 3 });
 const MONEY_AXIS = new Intl.NumberFormat('fr', { notation: 'compact', maximumFractionDigits: 1 });
@@ -31,7 +34,7 @@ const LONG_DAY = new Intl.DateTimeFormat('fr', { weekday: 'long', day: 'numeric'
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="chart" role="img" [attr.aria-label]="summary()">
-      <canvas baseChart type="bar" [data]="data()" [options]="options"></canvas>
+      <canvas baseChart type="bar" [data]="data()" [options]="options()"></canvas>
     </div>
     <details>
       <summary>Voir les valeurs</summary>
@@ -55,21 +58,16 @@ const LONG_DAY = new Intl.DateTimeFormat('fr', { weekday: 'long', day: 'numeric'
     }
 
     details {
-      margin-top: 0.5rem;
-      color: var(--mat-sys-on-surface-variant);
+      margin-top: 0.75rem;
+      color: var(--app-text-muted);
+
+      summary {
+        cursor: pointer;
+      }
     }
 
     .detail-table {
-      width: 100%;
       max-width: 420px;
-      border-collapse: collapse;
-
-      td,
-      th {
-        padding: 0.25rem 0.5rem;
-        text-align: left;
-        border-bottom: 1px solid var(--mat-sys-outline-variant);
-      }
 
       .amount {
         text-align: right;
@@ -80,13 +78,16 @@ const LONG_DAY = new Intl.DateTimeFormat('fr', { weekday: 'long', day: 'numeric'
 export class RevenueChart {
   readonly days = input.required<DailyAmount[]>();
 
+  private readonly theme = inject(ThemeService);
+  private readonly colors = computed(() => (this.theme.isDark() ? CHART_COLORS.dark : CHART_COLORS.light));
+
   protected readonly data = computed<ChartConfiguration<'bar'>['data']>(() => ({
     labels: this.days().map((day) => DAY.format(fromIsoDate(day.date))),
     datasets: [
       {
         data: this.days().map((day) => day.amount),
-        backgroundColor: SERIES_COLOR,
-        hoverBackgroundColor: SERIES_COLOR,
+        backgroundColor: this.colors().series,
+        hoverBackgroundColor: this.colors().series,
         // Colonnes fines, extremite arrondie de 4px, base carree
         maxBarThickness: 24,
         borderRadius: { topLeft: 4, topRight: 4 },
@@ -100,38 +101,51 @@ export class RevenueChart {
   protected readonly summary = computed(() => {
     const days = this.days();
     const total = days.reduce((sum, day) => sum + day.amount, 0);
-    return `CA des ventes sur ${days.length} jours : ${MONEY.format(total)}. Valeurs detaillees dans le tableau.`;
+    return `CA des ventes sur ${days.length} jours : ${MONEY.format(total)}. Valeurs détaillées dans le tableau.`;
   });
 
-  protected readonly options: ChartConfiguration<'bar'>['options'] = {
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: false,
-    interaction: { mode: 'index', intersect: false },
-    scales: {
-      x: {
-        grid: { display: false },
-        border: { color: GRID_COLOR },
-        ticks: { color: TEXT_SECONDARY, autoSkip: true, maxRotation: 0, autoSkipPadding: 12 },
-      },
-      y: {
-        beginAtZero: true,
-        grid: { color: GRID_COLOR },
-        border: { display: false },
-        ticks: { color: TEXT_SECONDARY, maxTicksLimit: 5, callback: (value) => MONEY_AXIS.format(Number(value)) },
-      },
-    },
-    plugins: {
-      tooltip: {
-        displayColors: false,
-        callbacks: {
-          title: (items) => {
-            const day = this.days()[items[0]?.dataIndex ?? 0];
-            return day ? LONG_DAY.format(fromIsoDate(day.date)) : '';
+  /** Recalcule a chaque changement de theme : le canvas ne lit pas les variables CSS. */
+  protected readonly options = computed<ChartConfiguration<'bar'>['options']>(() => {
+    const colors = this.colors();
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      interaction: { mode: 'index', intersect: false },
+      scales: {
+        x: {
+          grid: { display: false },
+          border: { color: colors.grid },
+          ticks: { color: colors.text, autoSkip: true, maxRotation: 0, autoSkipPadding: 12, font: { family: 'Inter' } },
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: colors.grid },
+          border: { display: false },
+          ticks: {
+            color: colors.text,
+            maxTicksLimit: 5,
+            font: { family: 'Inter' },
+            callback: (value) => MONEY_AXIS.format(Number(value)),
           },
-          label: (item) => MONEY.format(Number(item.raw)),
         },
       },
-    },
-  };
+      plugins: {
+        tooltip: {
+          displayColors: false,
+          padding: 10,
+          cornerRadius: 8,
+          titleFont: { family: 'Inter', weight: 600 },
+          bodyFont: { family: 'Inter' },
+          callbacks: {
+            title: (items) => {
+              const day = this.days()[items[0]?.dataIndex ?? 0];
+              return day ? LONG_DAY.format(fromIsoDate(day.date)) : '';
+            },
+            label: (item) => MONEY.format(Number(item.raw)),
+          },
+        },
+      },
+    };
+  });
 }

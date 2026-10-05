@@ -48,7 +48,7 @@ class SaleTest {
 
         assertThatThrownBy(() -> anonymous.complete(null, DUE))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("necessite un client");
+                .hasMessageContaining("nécessite un client");
     }
 
     @Test
@@ -73,7 +73,7 @@ class SaleTest {
         Sale overpaid = new Sale("V-2", null, SELLER, null);
         overpaid.addItem(product("100", null), 1, List.of());
         overpaid.addPayment(new BigDecimal("150"), PaymentMethod.CASH, null, SELLER, Instant.now());
-        assertThatThrownBy(() -> overpaid.complete(null, null)).hasMessageContaining("depasse le total");
+        assertThatThrownBy(() -> overpaid.complete(null, null)).hasMessageContaining("dépasse le total");
     }
 
     @Test
@@ -122,16 +122,16 @@ class SaleTest {
     void laterPayment_cannotExceedTheBalance_norTargetASettledOrCancelledSale() {
         Sale sale = creditSale("800", "300");
         assertThatThrownBy(() -> sale.receivePayment(new BigDecimal("500.001"), PaymentMethod.CASH, null, SELLER,
-                Instant.now())).hasMessageContaining("depasse le reste du");
+                Instant.now())).hasMessageContaining("dépasse le reste dû");
 
         sale.receivePayment(new BigDecimal("500"), PaymentMethod.CASH, null, SELLER, Instant.now());
         assertThatThrownBy(() -> sale.receivePayment(BigDecimal.ONE, PaymentMethod.CASH, null, SELLER, Instant.now()))
-                .hasMessageContaining("deja soldee");
+                .hasMessageContaining("déjà soldée");
 
         Sale cancelled = creditSale("800", "0");
         cancelled.cancel(SELLER, Instant.now(), "Erreur");
         assertThatThrownBy(() -> cancelled.receivePayment(BigDecimal.ONE, PaymentMethod.CASH, null, SELLER,
-                Instant.now())).hasMessageContaining("annulee");
+                Instant.now())).hasMessageContaining("annulée");
     }
 
     @Test

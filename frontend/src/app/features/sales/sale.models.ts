@@ -3,8 +3,8 @@ import { Payment, PaymentRequest, PaymentStatus } from '../../core/models/paymen
 export type SaleStatus = 'COMPLETED' | 'CANCELLED';
 
 export const SALE_STATUS_LABELS: Record<SaleStatus, string> = {
-  COMPLETED: 'Validee',
-  CANCELLED: 'Annulee',
+  COMPLETED: 'Validée',
+  CANCELLED: 'Annulée',
 };
 
 export interface SaleCustomer {

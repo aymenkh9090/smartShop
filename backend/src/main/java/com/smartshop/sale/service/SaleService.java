@@ -81,7 +81,7 @@ public class SaleService {
         Sale sale = saleRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Vente", id));
         if (sale.isCancelled()) {
-            throw new BusinessException("La vente %s est deja annulee".formatted(sale.getReference()));
+            throw new BusinessException("La vente %s est déjà annulée".formatted(sale.getReference()));
         }
         String reason = request.reason().trim();
         sale.getItems().stream()
@@ -113,7 +113,7 @@ public class SaleService {
         Set<Long> productIds = new HashSet<>();
         for (SaleRequest.Item item : items) {
             if (!productIds.add(item.productId())) {
-                throw new BusinessException("Produit present sur plusieurs lignes : regroupez les quantites",
+                throw new BusinessException("Produit présent sur plusieurs lignes : regroupez les quantités",
                         HttpStatus.BAD_REQUEST);
             }
         }

@@ -1,0 +1,89 @@
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.35rem 0;
+
+  &.disabled {
+    opacity: 0.6;
+  }
+}
+
+.avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--app-accent-soft);
+  color: var(--mat-sys-primary);
+  font: var(--mat-sys-label-large);
+  font-weight: 600;
+}
+
+.identity-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.identity-name {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+}
+
+.identity-login {
+  color: var(--app-text-muted);
+  font: var(--mat-sys-body-small);
+}
+
+.self-tag {
+  padding: 0 0.4rem;
+  border-radius: 6px;
+  background: var(--app-accent-soft);
+  color: var(--mat-sys-primary);
+  font: var(--mat-sys-label-small);
+  font-weight: 600;
+}
+
+.muted-cell {
+  color: var(--app-text-muted);
+}
+
+/* Le role est porte par le libelle et l'icone ; la couleur ne fait que renforcer. */
+.role-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.65rem 0.2rem 0.45rem;
+  border-radius: 8px;
+  background: var(--status-neutral-bg);
+  color: var(--status-neutral-fg);
+  font: var(--mat-sys-label-medium);
+  font-weight: 600;
+  white-space: nowrap;
+
+  mat-icon {
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+  }
+
+  &[data-role='ADMIN'] {
+    background: var(--status-info-bg);
+    color: var(--status-info-fg);
+  }
+
+  &[data-role='MANAGER'] {
+    background: var(--status-warning-bg);
+    color: var(--status-warning-fg);
+  }
+
+  &[data-role='SELLER'] {
+    background: var(--status-success-bg);
+    color: var(--status-success-fg);
+  }
+}

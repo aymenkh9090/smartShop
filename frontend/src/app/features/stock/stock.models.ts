@@ -2,7 +2,7 @@ export type StockMovementType = 'STOCK_IN' | 'STOCK_OUT' | 'ADJUSTMENT' | 'RETUR
 export type ProductUnitStatus = 'IN_STOCK' | 'SOLD' | 'REMOVED';
 
 export const MOVEMENT_TYPE_LABELS: Record<StockMovementType, string> = {
-  STOCK_IN: 'Entree',
+  STOCK_IN: 'Entrée',
   STOCK_OUT: 'Sortie',
   ADJUSTMENT: 'Ajustement',
   RETURN: 'Retour client',

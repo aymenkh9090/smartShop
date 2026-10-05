@@ -37,7 +37,7 @@ describe('Login', () => {
   }
 
   it('does not call the API when the form is empty', () => {
-    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button')!.click();
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button[type=submit]')!.click();
     expect(auth.login).not.toHaveBeenCalled();
   });
 

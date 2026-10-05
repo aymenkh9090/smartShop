@@ -48,7 +48,7 @@ export function createPaymentRow(amount: number | null = null, method: PaymentMe
           </mat-select>
         </mat-form-field>
         <mat-form-field>
-          <mat-label>Reference (cheque, virement...)</mat-label>
+          <mat-label>Référence (chèque, virement...)</mat-label>
           <input matInput formControlName="reference" />
         </mat-form-field>
         <button mat-icon-button type="button" (click)="payments().removeAt(i)" aria-label="Retirer ce paiement">
@@ -62,7 +62,7 @@ export function createPaymentRow(amount: number | null = null, method: PaymentMe
       </button>
       @if (remaining() > 0) {
         <button mat-stroked-button type="button" (click)="payments().push(createRow(remaining()))">
-          <mat-icon>payments</mat-icon> Regler le reste
+          <mat-icon>payments</mat-icon> Régler le reste
         </button>
       }
     </div>
@@ -83,6 +83,7 @@ export function createPaymentRow(amount: number | null = null, method: PaymentMe
       display: flex;
       gap: 0.5rem;
       flex-wrap: wrap;
+      margin-bottom: 1.25rem;
     }
   `,
 })

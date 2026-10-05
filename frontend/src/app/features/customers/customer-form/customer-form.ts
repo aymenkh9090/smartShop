@@ -69,7 +69,7 @@ export class CustomerForm implements OnInit {
     const save$ = id ? this.customerService.update(Number(id), request) : this.customerService.create(request);
     save$.subscribe({
       next: () => {
-        this.notifications.success(id ? 'Client modifie' : 'Client cree');
+        this.notifications.success(id ? 'Client modifié' : 'Client créé');
         void this.router.navigate(['/customers']);
       },
       error: (error: unknown) => {

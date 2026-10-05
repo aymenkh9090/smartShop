@@ -112,9 +112,9 @@ export class CustomerList {
     const activate = !item.active;
     const label = `${item.lastName} ${item.firstName}`;
     confirmAction(this.dialog, {
-      title: activate ? 'Reactiver le client' : 'Desactiver le client',
-      message: activate ? `Reactiver "${label}" ?` : `Desactiver "${label}" ? L'historique est conserve.`,
-      confirmLabel: activate ? 'Reactiver' : 'Desactiver',
+      title: activate ? 'Réactiver le client' : 'Désactiver le client',
+      message: activate ? `Réactiver "${label}" ?` : `Désactiver "${label}" ? L'historique est conservé.`,
+      confirmLabel: activate ? 'Réactiver' : 'Désactiver',
     })
       .pipe(
         filter(Boolean),
@@ -122,7 +122,7 @@ export class CustomerList {
       )
       .subscribe({
         next: () => {
-          this.notifications.success(activate ? 'Client reactive' : 'Client desactive');
+          this.notifications.success(activate ? 'Client réactivé' : 'Client désactivé');
           this.query.update((query) => ({ ...query }));
         },
         error: (error: unknown) => this.notifications.error(error),

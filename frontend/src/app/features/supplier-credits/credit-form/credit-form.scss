@@ -1,0 +1,31 @@
+.credit-form {
+  max-width: 900px;
+}
+
+.party {
+  margin-bottom: 1rem;
+}
+
+.selected-party {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.25rem 0.25rem 0.75rem;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+
+  span {
+    flex: 1;
+  }
+}
+
+.field-error {
+  margin: 0;
+  color: var(--status-danger-fg);
+  font: var(--mat-sys-body-small);
+}
+
+.hint {
+  color: var(--app-text-muted);
+  font: var(--mat-sys-body-small);
+}

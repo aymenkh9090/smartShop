@@ -1,5 +1,5 @@
 <div class="page-header">
-  <h2>Nouvel achat (reception)</h2>
+  <h2>Nouvel achat (réception)</h2>
 </div>
 
 <form class="form-card purchase" [formGroup]="form" (ngSubmit)="submit()" novalidate>
@@ -21,7 +21,7 @@
     </mat-form-field>
   </div>
 
-  <app-product-picker label="Ajouter un produit recu" (selected)="addProduct($event)" />
+  <app-product-picker label="Ajouter un produit reçu" (selected)="addProduct($event)" />
 
   <div formArrayName="lines">
     @for (line of form.controls.lines.controls; track line; let i = $index) {
@@ -38,22 +38,20 @@
           </button>
         </div>
         <div class="line-fields">
-          @if (!product.serialTracked) {
-            <mat-form-field>
-              <mat-label>Quantite</mat-label>
-              <input matInput type="number" min="1" step="1" formControlName="quantity" />
-              <mat-error>{{ errorOf(line.controls.quantity) }}</mat-error>
-            </mat-form-field>
-          }
           <mat-form-field>
-            <mat-label>Cout unitaire (DT)</mat-label>
+            <mat-label>Quantité</mat-label>
+            <input matInput type="number" min="1" step="1" formControlName="quantity" />
+            <mat-error>{{ errorOf(line.controls.quantity) }}</mat-error>
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Coût unitaire (DT)</mat-label>
             <input matInput type="number" min="0" step="0.001" formControlName="unitCost" />
             <mat-error>{{ errorOf(line.controls.unitCost) }}</mat-error>
           </mat-form-field>
         </div>
         @if (product.serialTracked) {
           <div formArrayName="units">
-            <p class="mat-caption">Unites recues : {{ line.controls.units.length }}</p>
+            <p class="mat-caption">IMEI / numéros de série (facultatif, au plus un par article)</p>
             @for (unit of line.controls.units.controls; track unit; let j = $index) {
               <div class="unit-row" [formGroupName]="j">
                 <mat-form-field>
@@ -62,21 +60,17 @@
                   <mat-error>{{ errorOf(unit.controls.imei) }}</mat-error>
                 </mat-form-field>
                 <mat-form-field>
-                  <mat-label>Numero de serie</mat-label>
+                  <mat-label>Numéro de série</mat-label>
                   <input matInput formControlName="serialNumber" />
                   <mat-error>{{ errorOf(unit.controls.serialNumber) }}</mat-error>
                 </mat-form-field>
-                <button mat-icon-button type="button" (click)="removeUnitRow(line, j)"
-                        [disabled]="line.controls.units.length === 1" aria-label="Retirer cette unite">
+                <button mat-icon-button type="button" (click)="removeUnitRow(line, j)" aria-label="Retirer cette unité">
                   <mat-icon>remove_circle_outline</mat-icon>
                 </button>
-                @if (unit.hasError('identifierRequired') && unit.touched) {
-                  <small class="row-error">Saisir un IMEI ou un numero de serie</small>
-                }
               </div>
             }
             <button mat-stroked-button type="button" (click)="addUnitRow(line)">
-              <mat-icon>add</mat-icon> Ajouter une unite
+              <mat-icon>add</mat-icon> Ajouter un IMEI
             </button>
           </div>
         }
@@ -87,9 +81,9 @@
   <dl class="totals">
     <dt>Total</dt>
     <dd class="grand-total">{{ total() | currency: 'TND' : 'symbol' : '1.3-3' }}</dd>
-    <dt>Paye</dt>
+    <dt>Payé</dt>
     <dd>{{ paid() | currency: 'TND' : 'symbol' : '1.3-3' }}</dd>
-    <dt>Reste a payer (credit fournisseur)</dt>
+    <dt>Reste à payer (crédit fournisseur)</dt>
     <dd [class.due]="remaining() > 0">{{ remaining() | currency: 'TND' : 'symbol' : '1.3-3' }}</dd>
   </dl>
 
@@ -99,7 +93,7 @@
   <div class="form-grid">
     @if (remaining() > 0) {
       <mat-form-field>
-        <mat-label>Echeance du reste (facultatif)</mat-label>
+        <mat-label>Échéance du reste (facultatif)</mat-label>
         <input matInput [matDatepicker]="duePicker" formControlName="dueDate" />
         <mat-datepicker-toggle matIconSuffix [for]="duePicker" />
         <mat-datepicker #duePicker />

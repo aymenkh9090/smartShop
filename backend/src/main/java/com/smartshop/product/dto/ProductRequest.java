@@ -15,10 +15,14 @@ import java.math.BigDecimal;
 /**
  * Creation et modification d'un produit. La quantite n'en fait pas partie :
  * elle evolue uniquement par les mouvements de stock.
+ * <p>
+ * Saisie simple : seuls nom, categorie, type et prix de vente sont obligatoires. Les champs absents
+ * prennent une valeur par defaut a la creation (SKU genere, etat NEUF, prix d'achat et seuil a 0)
+ * et conservent leur valeur actuelle en modification.
  */
 public record ProductRequest(
-        @NotBlank @Size(max = 50)
-        @Pattern(regexp = "^\\s*[A-Za-z0-9._-]+\\s*$", message = "lettres, chiffres, '.', '_' ou '-' uniquement")
+        @Size(max = 50)
+        @Pattern(regexp = "^\\s*[A-Za-z0-9._-]*\\s*$", message = "lettres, chiffres, '.', '_' ou '-' uniquement")
         String sku,
 
         @Size(max = 50)
@@ -30,22 +34,38 @@ public record ProductRequest(
         @Size(max = 2000) String description,
         @NotNull Long categoryId,
         @NotNull ProductType type,
-        @NotNull ProductCondition condition,
+        ProductCondition condition,
         @Size(max = 100) String brand,
         @Size(max = 100) String model,
 
-        @NotNull @PositiveOrZero @Digits(integer = 9, fraction = 3)
+        @PositiveOrZero @Digits(integer = 9, fraction = 3)
         BigDecimal purchasePrice,
 
         @NotNull @PositiveOrZero @Digits(integer = 9, fraction = 3)
         BigDecimal salePrice,
 
-        @NotNull @PositiveOrZero @Max(1_000_000)
+        @PositiveOrZero @Max(1_000_000)
         Integer minStock,
 
-        @NotNull Boolean serialTracked,
+        Boolean serialTracked,
 
         @PositiveOrZero @Max(120)
         Integer warrantyMonths
 ) {
+
+    /** Complete les champs facultatifs absents avec les valeurs donnees. */
+    public ProductRequest withDefaults(String defaultSku, ProductCondition defaultCondition,
+                                       BigDecimal defaultPurchasePrice, int defaultMinStock,
+                                       boolean defaultSerialTracked) {
+        return new ProductRequest(
+                sku == null || sku.isBlank() ? defaultSku : sku,
+                barcode, reference, name, description, categoryId, type,
+                condition == null ? defaultCondition : condition,
+                brand, model,
+                purchasePrice == null ? defaultPurchasePrice : purchasePrice,
+                salePrice,
+                minStock == null ? defaultMinStock : minStock,
+                serialTracked == null ? defaultSerialTracked : serialTracked,
+                warrantyMonths);
+    }
 }

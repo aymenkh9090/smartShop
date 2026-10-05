@@ -38,7 +38,7 @@ public class CustomerService {
     public CustomerResponse create(CustomerRequest request) {
         Customer customer = customerMapper.toEntity(request);
         if (customerRepository.existsByPhone(customer.getPhone())) {
-            throw duplicate("telephone", customer.getPhone());
+            throw duplicate("téléphone", customer.getPhone());
         }
         if (customer.getCin() != null && customerRepository.existsByCin(customer.getCin())) {
             throw duplicate("CIN", customer.getCin());
@@ -53,7 +53,7 @@ public class CustomerService {
         String phone = TextNormalizer.phone(request.phone());
         String cin = TextNormalizer.upper(request.cin());
         if (customerRepository.existsByPhoneAndIdNot(phone, id)) {
-            throw duplicate("telephone", phone);
+            throw duplicate("téléphone", phone);
         }
         if (cin != null && customerRepository.existsByCinAndIdNot(cin, id)) {
             throw duplicate("CIN", cin);
@@ -74,7 +74,7 @@ public class CustomerService {
     public Customer getActiveEntity(Long id) {
         Customer entity = getEntity(id);
         if (!entity.isActive()) {
-            throw new BusinessException("Client desactive : operation impossible");
+            throw new BusinessException("Client désactivé : opération impossible");
         }
         return entity;
     }
@@ -85,6 +85,6 @@ public class CustomerService {
     }
 
     private static BusinessException duplicate(String field, String value) {
-        return new BusinessException("Un client avec le %s '%s' existe deja".formatted(field, value));
+        return new BusinessException("Un client avec le %s '%s' existe déjà".formatted(field, value));
     }
 }

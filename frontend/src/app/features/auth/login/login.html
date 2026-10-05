@@ -1,26 +1,59 @@
-<section class="login">
-  <h1>SmartShop</h1>
-  <h2>Connexion</h2>
+<div class="login-page">
+  <aside class="brand-panel" aria-hidden="true">
+    <div class="brand">
+      <span class="brand-logo"><mat-icon class="filled">storefront</mat-icon></span>
+      <span>SmartShop</span>
+    </div>
+    <div class="pitch">
+      <h2>Toute la boutique, au même endroit.</h2>
+      <p>Ventes, stock, crédits et service après-vente, pour les smartphones, accessoires et abonnements.</p>
+      <ul>
+        <li><mat-icon>point_of_sale</mat-icon> Caisse rapide et ventes à crédit</li>
+        <li><mat-icon>inventory_2</mat-icon> Stock et suivi IMEI en temps réel</li>
+        <li><mat-icon>build</mat-icon> SAV suivi de la réception à la livraison</li>
+      </ul>
+    </div>
+    <span class="footer">© SmartShop</span>
+  </aside>
 
-  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-    <mat-form-field>
-      <mat-label>Nom d'utilisateur ou email</mat-label>
-      <input matInput id="username" formControlName="username" autocomplete="username" />
-      <mat-error>{{ errorOf(form.controls.username) }}</mat-error>
-    </mat-form-field>
+  <main class="form-panel">
+    <section class="login">
+      <div class="mobile-brand">
+        <span class="brand-logo"><mat-icon class="filled">storefront</mat-icon></span>
+        <span>SmartShop</span>
+      </div>
+      <h1>Connexion</h1>
+      <p class="subtitle">Connectez-vous pour accéder à votre espace.</p>
 
-    <mat-form-field>
-      <mat-label>Mot de passe</mat-label>
-      <input matInput id="password" type="password" formControlName="password" autocomplete="current-password" />
-      <mat-error>{{ errorOf(form.controls.password) }}</mat-error>
-    </mat-form-field>
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <mat-form-field>
+          <mat-label>Nom d'utilisateur ou email</mat-label>
+          <mat-icon matPrefix>person</mat-icon>
+          <input matInput id="username" formControlName="username" autocomplete="username" />
+          <mat-error>{{ errorOf(form.controls.username) }}</mat-error>
+        </mat-form-field>
 
-    @if (errorMessage(); as message) {
-      <p class="form-error" role="alert">{{ message }}</p>
-    }
+        <mat-form-field>
+          <mat-label>Mot de passe</mat-label>
+          <mat-icon matPrefix>lock</mat-icon>
+          <input matInput id="password" [type]="showPassword() ? 'text' : 'password'" formControlName="password"
+                 autocomplete="current-password" />
+          <button mat-icon-button matSuffix type="button" (click)="showPassword.set(!showPassword())"
+                  [attr.aria-label]="showPassword() ? 'Masquer le mot de passe' : 'Afficher le mot de passe'"
+                  [attr.aria-pressed]="showPassword()">
+            <mat-icon>{{ showPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+          <mat-error>{{ errorOf(form.controls.password) }}</mat-error>
+        </mat-form-field>
 
-    <button mat-flat-button type="submit" [disabled]="submitting()">
-      {{ submitting() ? 'Connexion...' : 'Se connecter' }}
-    </button>
-  </form>
-</section>
+        @if (errorMessage(); as message) {
+          <p class="form-error" role="alert"><mat-icon>error</mat-icon> {{ message }}</p>
+        }
+
+        <button mat-flat-button type="submit" class="submit" [disabled]="submitting()">
+          {{ submitting() ? 'Connexion...' : 'Se connecter' }}
+        </button>
+      </form>
+    </section>
+  </main>
+</div>

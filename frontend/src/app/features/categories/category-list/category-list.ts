@@ -39,8 +39,8 @@ export class CategoryList {
 
   protected remove(category: Category): void {
     confirmAction(this.dialog, {
-      title: 'Supprimer la categorie',
-      message: `Supprimer la categorie "${category.name}" ?`,
+      title: 'Supprimer la catégorie',
+      message: `Supprimer la catégorie "${category.name}" ?`,
       confirmLabel: 'Supprimer',
     })
       .pipe(
@@ -49,7 +49,7 @@ export class CategoryList {
       )
       .subscribe({
         next: () => {
-          this.notifications.success('Categorie supprimee');
+          this.notifications.success('Catégorie supprimée');
           this.load();
         },
         error: (error: unknown) => this.notifications.error(error),

@@ -34,7 +34,7 @@ public class GlobalExceptionHandler {
         List<ApiError.FieldViolation> errors = ex.getBindingResult().getFieldErrors().stream()
                 .map(e -> new ApiError.FieldViolation(e.getField(), e.getDefaultMessage()))
                 .toList();
-        return build(HttpStatus.BAD_REQUEST, "Donnees invalides", request, errors);
+        return build(HttpStatus.BAD_REQUEST, "Données invalides", request, errors);
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
@@ -42,23 +42,23 @@ public class GlobalExceptionHandler {
         List<ApiError.FieldViolation> errors = ex.getConstraintViolations().stream()
                 .map(v -> new ApiError.FieldViolation(v.getPropertyPath().toString(), v.getMessage()))
                 .toList();
-        return build(HttpStatus.BAD_REQUEST, "Donnees invalides", request, errors);
+        return build(HttpStatus.BAD_REQUEST, "Données invalides", request, errors);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     ResponseEntity<ApiError> handleUnreadable(HttpMessageNotReadableException ex, HttpServletRequest request) {
-        return build(HttpStatus.BAD_REQUEST, "Corps de requete illisible ou mal forme", request, List.of());
+        return build(HttpStatus.BAD_REQUEST, "Corps de requête illisible ou mal formé", request, List.of());
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     ResponseEntity<ApiError> handleTypeMismatch(MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
-        return build(HttpStatus.BAD_REQUEST, "Parametre invalide : " + ex.getName(), request, List.of());
+        return build(HttpStatus.BAD_REQUEST, "Paramètre invalide : " + ex.getName(), request, List.of());
     }
 
     /** Tri sur une propriete inconnue (?sort=xxx), eventuellement enveloppe par la traduction d'exceptions JPA. */
     @ExceptionHandler(PropertyReferenceException.class)
     ResponseEntity<ApiError> handleInvalidSort(PropertyReferenceException ex, HttpServletRequest request) {
-        return build(HttpStatus.BAD_REQUEST, "Critere de tri invalide : " + ex.getPropertyName(), request, List.of());
+        return build(HttpStatus.BAD_REQUEST, "Critère de tri invalide : " + ex.getPropertyName(), request, List.of());
     }
 
     @ExceptionHandler(InvalidDataAccessApiUsageException.class)
@@ -82,7 +82,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     ResponseEntity<ApiError> handleDataIntegrity(DataIntegrityViolationException ex, HttpServletRequest request) {
         log.warn("Violation de contrainte sur {} : {}", request.getRequestURI(), ex.getMostSpecificCause().getMessage());
-        return build(HttpStatus.CONFLICT, "Operation en conflit avec les donnees existantes", request, List.of());
+        return build(HttpStatus.CONFLICT, "Opération en conflit avec les données existantes", request, List.of());
     }
 
     /** Meme message pour un mauvais mot de passe et un compte desactive : ne revele pas l'existence du compte. */
@@ -98,7 +98,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)
     ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
-        return build(HttpStatus.FORBIDDEN, "Acces refuse", request, List.of());
+        return build(HttpStatus.FORBIDDEN, "Accès refusé", request, List.of());
     }
 
     @ExceptionHandler(Exception.class)
@@ -107,7 +107,7 @@ public class GlobalExceptionHandler {
         if (ex instanceof ErrorResponse errorResponse) {
             HttpStatusCode status = errorResponse.getStatusCode();
             String detail = errorResponse.getBody().getDetail();
-            return build(status, detail != null ? detail : "Requete invalide", request, List.of());
+            return build(status, detail != null ? detail : "Requête invalide", request, List.of());
         }
         log.error("Erreur inattendue sur {} {}", request.getMethod(), request.getRequestURI(), ex);
         return build(HttpStatus.INTERNAL_SERVER_ERROR, "Erreur interne du serveur", request, List.of());

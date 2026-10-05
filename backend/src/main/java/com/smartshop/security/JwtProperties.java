@@ -15,7 +15,7 @@ import java.time.Duration;
 @Validated
 @ConfigurationProperties(prefix = "smartshop.security.jwt")
 public record JwtProperties(
-        @NotBlank @Size(min = 32, message = "doit contenir au moins 32 caracteres") String secret,
+        @NotBlank @Size(min = 32, message = "doit contenir au moins 32 caractères") String secret,
         @NotNull Duration accessTokenTtl,
         @NotNull Duration refreshTokenTtl
 ) {

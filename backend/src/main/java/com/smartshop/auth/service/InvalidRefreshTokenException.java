@@ -6,6 +6,6 @@ import org.springframework.http.HttpStatus;
 public class InvalidRefreshTokenException extends BusinessException {
 
     public InvalidRefreshTokenException() {
-        super("Session expiree ou invalide, veuillez vous reconnecter", HttpStatus.UNAUTHORIZED);
+        super("Session expirée ou invalide, veuillez vous reconnecter", HttpStatus.UNAUTHORIZED);
     }
 }

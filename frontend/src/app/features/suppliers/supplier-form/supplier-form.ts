@@ -67,7 +67,7 @@ export class SupplierForm implements OnInit {
     const save$ = id ? this.supplierService.update(Number(id), request) : this.supplierService.create(request);
     save$.subscribe({
       next: () => {
-        this.notifications.success(id ? 'Fournisseur modifie' : 'Fournisseur cree');
+        this.notifications.success(id ? 'Fournisseur modifié' : 'Fournisseur créé');
         void this.router.navigate(['/suppliers']);
       },
       error: (error: unknown) => {

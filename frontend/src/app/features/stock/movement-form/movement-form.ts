@@ -33,9 +33,10 @@ import {
 import { StockService } from '../stock.service';
 
 /**
- * none     : produit simple, quantite saisie
- * new      : produit suivi, entree -> une ligne (IMEI / numero de serie) par unite
- * existing : produit suivi, sortie ou retour -> selection des unites existantes
+ * La quantite est toujours saisie. Pour un produit suivi a l'unite, l'IMEI est facultatif :
+ * none     : produit simple ou ajustement
+ * new      : produit suivi, entree -> IMEI / numero de serie facultatifs (au plus un par article)
+ * existing : produit suivi, sortie ou retour -> selection facultative des unites concernees
  */
 type UnitMode = 'none' | 'new' | 'existing';
 
@@ -44,10 +45,8 @@ type UnitRow = FormGroup<{ imei: FormControl<string>; serialNumber: FormControl<
 const nonZero = (control: AbstractControl): ValidationErrors | null =>
   control.value === 0 ? { nonZero: true } : null;
 
-const identifierRequired = (group: AbstractControl): ValidationErrors | null => {
-  const { imei, serialNumber } = group.value as { imei: string; serialNumber: string };
-  return imei?.trim() || serialNumber?.trim() ? null : { identifierRequired: true };
-};
+const isFilled = (unit: { imei: string; serialNumber: string }): boolean =>
+  !!(unit.imei.trim() || unit.serialNumber.trim());
 
 @Component({
   selector: 'app-movement-form',
@@ -95,16 +94,14 @@ export class MovementForm implements OnInit {
   });
 
   protected readonly unitMode = computed<UnitMode>(() => {
-    if (!this.product()?.serialTracked) {
+    const type = this.type();
+    if (!this.product()?.serialTracked || type === 'ADJUSTMENT') {
       return 'none';
     }
-    return this.type() === 'STOCK_IN' ? 'new' : 'existing';
+    return type === 'STOCK_IN' ? 'new' : 'existing';
   });
 
-  /** L'ajustement d'un produit suivi se fait par entree / sortie d'unites identifiees. */
-  protected readonly availableTypes = computed(() =>
-    this.product()?.serialTracked ? MOVEMENT_TYPES.filter((type) => type !== 'ADJUSTMENT') : MOVEMENT_TYPES,
-  );
+  protected readonly availableTypes = MOVEMENT_TYPES;
 
   constructor() {
     this.form.controls.type.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => this.configure());
@@ -123,11 +120,7 @@ export class MovementForm implements OnInit {
 
   protected selectProduct(product: Product): void {
     this.product.set(product);
-    if (product.serialTracked && this.form.controls.type.value === 'ADJUSTMENT') {
-      this.form.controls.type.setValue('STOCK_IN');
-    } else {
-      this.configure();
-    }
+    this.configure();
   }
 
   protected changeProduct(): void {
@@ -137,16 +130,13 @@ export class MovementForm implements OnInit {
 
   protected addUnitRow(): void {
     this.form.controls.units.push(
-      new FormGroup(
-        {
-          imei: new FormControl('', { nonNullable: true, validators: imeiValidator }),
-          serialNumber: new FormControl('', {
-            nonNullable: true,
-            validators: [Validators.maxLength(50), Validators.pattern(/^\s*[A-Za-z0-9/._-]*\s*$/)],
-          }),
-        },
-        { validators: identifierRequired },
-      ),
+      new FormGroup({
+        imei: new FormControl('', { nonNullable: true, validators: imeiValidator }),
+        serialNumber: new FormControl('', {
+          nonNullable: true,
+          validators: [Validators.maxLength(50), Validators.pattern(/^\s*[A-Za-z0-9/._-]*\s*$/)],
+        }),
+      }),
     );
   }
 
@@ -161,7 +151,7 @@ export class MovementForm implements OnInit {
   protected submit(): void {
     const product = this.product();
     if (!product) {
-      this.notifications.error(null, 'Selectionnez un produit.');
+      this.notifications.error(null, 'Sélectionnez un produit.');
       return;
     }
     if (this.form.invalid) {
@@ -169,21 +159,22 @@ export class MovementForm implements OnInit {
       return;
     }
     const mode = this.unitMode();
-    if (mode === 'existing' && this.selectedUnitIds().length === 0) {
-      this.notifications.error(null, 'Selectionnez au moins une unite.');
+    const value = this.form.getRawValue();
+    const units = value.units.filter(isFilled);
+    const identified = mode === 'new' ? units.length : mode === 'existing' ? this.selectedUnitIds().length : 0;
+    if (mode !== 'none' && identified > value.quantity!) {
+      this.notifications.error(null, `${identified} IMEI pour une quantité de ${value.quantity} : ajustez la quantité.`);
       return;
     }
-    const value = this.form.getRawValue();
     const request: StockMovementRequest = {
       productId: product.id,
       type: value.type,
-      quantity:
-        mode === 'new' ? value.units.length : mode === 'existing' ? this.selectedUnitIds().length : value.quantity!,
+      quantity: value.quantity!,
       reason: value.reason.trim() || null,
       reference: value.reference.trim() || null,
       units:
         mode === 'new'
-          ? value.units.map((unit) => ({
+          ? units.map((unit) => ({
               imei: unit.imei.trim() || null,
               serialNumber: unit.serialNumber.trim() || null,
             }))
@@ -194,7 +185,7 @@ export class MovementForm implements OnInit {
     this.submitting.set(true);
     this.stockService.recordMovement(request).subscribe({
       next: (movement) => {
-        this.notifications.success(`Mouvement enregistre (stock : ${movement.quantityAfter})`);
+        this.notifications.success(`Mouvement enregistré (stock : ${movement.quantityAfter})`);
         void this.router.navigate(['/stock']);
       },
       error: (error: unknown) => {
@@ -210,14 +201,9 @@ export class MovementForm implements OnInit {
     const type = this.form.controls.type.value;
     const mode = this.unitMode();
     const quantity = this.form.controls.quantity;
-    if (mode === 'none') {
-      quantity.enable({ emitEvent: false });
-      quantity.setValidators(
-        type === 'ADJUSTMENT' ? [Validators.required, nonZero] : [Validators.required, Validators.min(1)],
-      );
-    } else {
-      quantity.disable({ emitEvent: false });
-    }
+    quantity.setValidators(
+      type === 'ADJUSTMENT' ? [Validators.required, nonZero] : [Validators.required, Validators.min(1)],
+    );
     quantity.updateValueAndValidity({ emitEvent: false });
 
     const reason = this.form.controls.reason;
@@ -226,11 +212,8 @@ export class MovementForm implements OnInit {
     );
     reason.updateValueAndValidity({ emitEvent: false });
 
-    const units = this.form.controls.units;
-    if (mode === 'new' && units.length === 0) {
-      this.addUnitRow();
-    } else if (mode !== 'new') {
-      units.clear({ emitEvent: false });
+    if (mode !== 'new') {
+      this.form.controls.units.clear({ emitEvent: false });
     }
 
     this.selectedUnitIds.set([]);

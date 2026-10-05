@@ -213,7 +213,7 @@ class AuthControllerIntegrationTest {
     void refresh_withUnknownToken_returns401() throws Exception {
         refresh("not-a-real-token")
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Session expiree ou invalide, veuillez vous reconnecter"));
+                .andExpect(jsonPath("$.message").value("Session expirée ou invalide, veuillez vous reconnecter"));
     }
 
     @Test

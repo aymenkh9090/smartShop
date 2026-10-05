@@ -54,7 +54,7 @@ public class PurchaseService {
         Set<Long> productIds = new HashSet<>();
         for (PurchaseRequest.Item item : request.items()) {
             if (!productIds.add(item.productId())) {
-                throw new BusinessException("Produit present sur plusieurs lignes : regroupez les quantites",
+                throw new BusinessException("Produit présent sur plusieurs lignes : regroupez les quantités",
                         HttpStatus.BAD_REQUEST);
             }
         }

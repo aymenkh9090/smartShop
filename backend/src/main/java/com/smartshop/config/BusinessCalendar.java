@@ -35,6 +35,17 @@ public class BusinessCalendar {
         return date.atStartOfDay(zone).toInstant();
     }
 
+    /**
+     * Instant enregistre pour une date saisie par l'utilisateur (date d'un credit, d'un versement) :
+     * maintenant pour aujourd'hui (ou sans date), midi heure de la boutique pour un autre jour.
+     */
+    public Instant momentOf(LocalDate date) {
+        if (date == null || date.equals(today())) {
+            return clock.instant();
+        }
+        return date.atTime(12, 0).atZone(zone).toInstant();
+    }
+
     /** Date locale (Tunisie) d'un instant. */
     public LocalDate dateOf(Instant instant) {
         return LocalDate.ofInstant(instant, zone);

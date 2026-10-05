@@ -87,7 +87,7 @@ export class SaleForm {
   );
 
   protected readonly subtotal = computed(() =>
-    sumAmounts(this.value().lines.map((line) => lineAmount(line.product.salePrice, this.lineQuantity(line)))),
+    sumAmounts(this.value().lines.map((line) => lineAmount(line.product.salePrice, line.quantity))),
   );
   protected readonly total = computed(() =>
     fromMillimes(Math.max(0, toMillimes(this.subtotal()) - toMillimes(this.value().discount))),
@@ -101,20 +101,24 @@ export class SaleForm {
       return 'Ajoutez au moins un produit.';
     }
     if (toMillimes(this.value().discount) > toMillimes(this.subtotal())) {
-      return 'La remise depasse le sous-total.';
+      return 'La remise dépasse le sous-total.';
     }
     if (this.remaining() < 0) {
-      return 'Le montant paye depasse le total.';
+      return 'Le montant payé dépasse le total.';
     }
     if (this.remaining() > 0 && !this.customer()) {
-      return 'Vente a credit : selectionnez un client.';
+      return 'Vente à crédit : sélectionnez un client.';
+    }
+    const tooManyUnits = this.value().lines.find((line) => line.unitIds.length > line.quantity);
+    if (tooManyUnits) {
+      return `${tooManyUnits.product.name} : plus d'IMEI sélectionnés que la quantité.`;
     }
     return null;
   });
 
   protected addProduct(product: Product): void {
     if (this.form.controls.lines.controls.some((line) => line.controls.product.value.id === product.id)) {
-      this.notifications.error(null, `"${product.name}" est deja dans la vente : modifiez la quantite.`);
+      this.notifications.error(null, `"${product.name}" est déjà dans la vente : modifiez la quantité.`);
       return;
     }
     if (product.quantity <= 0) {
@@ -128,10 +132,8 @@ export class SaleForm {
           nonNullable: true,
           validators: [Validators.required, Validators.min(1), Validators.max(product.quantity)],
         }),
-        unitIds: new FormControl<number[]>([], {
-          nonNullable: true,
-          validators: product.serialTracked ? Validators.required : [],
-        }),
+        // IMEI facultatif : seul le stock du modele est obligatoirement verifie
+        unitIds: new FormControl<number[]>([], { nonNullable: true }),
       }),
     );
     if (product.serialTracked) {
@@ -152,7 +154,15 @@ export class SaleForm {
   }
 
   protected lineTotal(line: SaleLine): number {
-    return lineAmount(line.controls.product.value.salePrice, this.lineQuantity(line.getRawValue()));
+    return lineAmount(line.controls.product.value.salePrice, line.controls.quantity.value);
+  }
+
+  /** Choisir des IMEI augmente la quantite si besoin (jamais au-dela du stock). */
+  protected syncQuantity(line: SaleLine): void {
+    const { quantity, unitIds } = line.controls;
+    if (unitIds.value.length > quantity.value) {
+      quantity.setValue(Math.min(unitIds.value.length, line.controls.product.value.quantity));
+    }
   }
 
   protected unitLabel(unit: ProductUnit): string {
@@ -175,8 +185,8 @@ export class SaleForm {
       customerId: this.customer()?.id ?? null,
       items: value.lines.map((line) => ({
         productId: line.product.id,
-        quantity: this.lineQuantity(line),
-        unitIds: line.product.serialTracked ? line.unitIds : null,
+        quantity: line.quantity,
+        unitIds: line.product.serialTracked && line.unitIds.length ? line.unitIds : null,
       })),
       discount: value.discount,
       payments: value.payments.map((payment) => ({
@@ -191,7 +201,7 @@ export class SaleForm {
     this.submitting.set(true);
     this.saleService.create(request).subscribe({
       next: (sale) => {
-        this.notifications.success(`Vente ${sale.reference} enregistree`);
+        this.notifications.success(`Vente ${sale.reference} enregistrée`);
         void this.router.navigate(['/sales', sale.id]);
       },
       error: (err: unknown) => {
@@ -199,11 +209,6 @@ export class SaleForm {
         this.notifications.error(err);
       },
     });
-  }
-
-  /** Produit suivi a l'unite : la quantite est le nombre d'unites choisies. */
-  private lineQuantity(line: { product: Product; quantity: number; unitIds: number[] }): number {
-    return line.product.serialTracked ? line.unitIds.length : line.quantity;
   }
 
   private loadUnits(productId: number): void {

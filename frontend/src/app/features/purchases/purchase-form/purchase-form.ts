@@ -1,15 +1,7 @@
 import { CurrencyPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import {
-  AbstractControl,
-  FormArray,
-  FormControl,
-  FormGroup,
-  ReactiveFormsModule,
-  ValidationErrors,
-  Validators,
-} from '@angular/forms';
+import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { MatDatepickerModule } from '@angular/material/datepicker';
@@ -41,14 +33,13 @@ type PurchaseLine = FormGroup<{
   units: FormArray<UnitRow>;
 }>;
 
-const identifierRequired = (group: AbstractControl): ValidationErrors | null => {
-  const { imei, serialNumber } = group.value as { imei: string; serialNumber: string };
-  return imei?.trim() || serialNumber?.trim() ? null : { identifierRequired: true };
-};
+const isFilled = (unit: { imei: string; serialNumber: string }): boolean =>
+  !!(unit.imei.trim() || unit.serialNumber.trim());
 
 
 /**
- * Reception d'un achat fournisseur. Pour un produit suivi a l'unite, une ligne IMEI par article recu.
+ * Reception d'un achat fournisseur. Pour un produit suivi a l'unite, les IMEI sont facultatifs
+ * (au plus un par article recu).
  */
 @Component({
   selector: 'app-purchase-form',
@@ -96,20 +87,24 @@ export class PurchaseForm {
   );
 
   protected readonly total = computed(() =>
-    sumAmounts(this.value().lines.map((line) => lineAmount(line.unitCost ?? 0, this.lineQuantity(line)))),
+    sumAmounts(this.value().lines.map((line) => lineAmount(line.unitCost ?? 0, line.quantity))),
   );
   protected readonly paid = computed(() => sumAmounts(this.value().payments.map((payment) => payment.amount)));
   protected readonly remaining = computed(() => fromMillimes(toMillimes(this.total()) - toMillimes(this.paid())));
 
   protected readonly blockingError = computed(() => {
     if (!this.supplier()) {
-      return 'Selectionnez un fournisseur.';
+      return 'Sélectionnez un fournisseur.';
     }
     if (this.value().lines.length === 0) {
       return 'Ajoutez au moins un produit.';
     }
     if (this.remaining() < 0) {
-      return 'Le montant paye depasse le total.';
+      return 'Le montant payé dépasse le total.';
+    }
+    const tooManyUnits = this.value().lines.find((line) => line.units.filter(isFilled).length > line.quantity);
+    if (tooManyUnits) {
+      return `${tooManyUnits.product.name} : plus d'IMEI que d'articles reçus.`;
     }
     return null;
   });
@@ -124,7 +119,7 @@ export class PurchaseForm {
 
   protected addProduct(product: Product): void {
     if (this.form.controls.lines.controls.some((line) => line.controls.product.value.id === product.id)) {
-      this.notifications.error(null, `"${product.name}" est deja dans l'achat.`);
+      this.notifications.error(null, `"${product.name}" est déjà dans l'achat.`);
       return;
     }
     const line: PurchaseLine = new FormGroup({
@@ -136,9 +131,6 @@ export class PurchaseForm {
       unitCost: new FormControl<number | null>(product.purchasePrice, [Validators.required, Validators.min(0)]),
       units: new FormArray<UnitRow>([]),
     });
-    if (product.serialTracked) {
-      this.addUnitRow(line);
-    }
     this.form.controls.lines.push(line);
   }
 
@@ -148,16 +140,13 @@ export class PurchaseForm {
 
   protected addUnitRow(line: PurchaseLine): void {
     line.controls.units.push(
-      new FormGroup(
-        {
-          imei: new FormControl('', { nonNullable: true, validators: imeiValidator }),
-          serialNumber: new FormControl('', {
-            nonNullable: true,
-            validators: [Validators.maxLength(50), Validators.pattern(/^\s*[A-Za-z0-9/._-]*\s*$/)],
-          }),
-        },
-        { validators: identifierRequired },
-      ),
+      new FormGroup({
+        imei: new FormControl('', { nonNullable: true, validators: imeiValidator }),
+        serialNumber: new FormControl('', {
+          nonNullable: true,
+          validators: [Validators.maxLength(50), Validators.pattern(/^\s*[A-Za-z0-9/._-]*\s*$/)],
+        }),
+      }),
     );
   }
 
@@ -167,7 +156,7 @@ export class PurchaseForm {
 
   protected lineTotal(line: PurchaseLine): number {
     const value = line.getRawValue();
-    return lineAmount(value.unitCost ?? 0, this.lineQuantity(value));
+    return lineAmount(value.unitCost ?? 0, value.quantity);
   }
 
   protected submit(): void {
@@ -186,10 +175,10 @@ export class PurchaseForm {
       supplierInvoiceRef: value.supplierInvoiceRef.trim() || null,
       items: value.lines.map((line) => ({
         productId: line.product.id,
-        quantity: this.lineQuantity(line),
+        quantity: line.quantity,
         unitCost: line.unitCost!,
         units: line.product.serialTracked
-          ? line.units.map((unit) => ({
+          ? line.units.filter(isFilled).map((unit) => ({
               imei: unit.imei.trim() || null,
               serialNumber: unit.serialNumber.trim() || null,
             }))
@@ -207,7 +196,7 @@ export class PurchaseForm {
     this.submitting.set(true);
     this.purchaseService.create(request).subscribe({
       next: (purchase) => {
-        this.notifications.success(`Achat ${purchase.reference} enregistre`);
+        this.notifications.success(`Achat ${purchase.reference} enregistré`);
         void this.router.navigate(['/purchases', purchase.id]);
       },
       error: (err: unknown) => {
@@ -216,10 +205,5 @@ export class PurchaseForm {
         this.notifications.error(err);
       },
     });
-  }
-
-  /** Produit suivi a l'unite : la quantite est le nombre d'unites saisies. */
-  private lineQuantity(line: { product: Product; quantity: number; units: unknown[] }): number {
-    return line.product.serialTracked ? line.units.length : line.quantity;
   }
 }

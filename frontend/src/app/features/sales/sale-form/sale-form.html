@@ -12,7 +12,7 @@
           <tr>
             <th>Produit</th>
             <th>Prix unitaire</th>
-            <th>Quantite / IMEI</th>
+            <th>Quantité / IMEI (facultatif)</th>
             <th class="amount">Total</th>
             <th></th>
           </tr>
@@ -27,23 +27,23 @@
               </td>
               <td>{{ product.salePrice | currency: 'TND' : 'symbol' : '1.3-3' }}</td>
               <td>
-                @if (product.serialTracked) {
-                  <mat-form-field subscriptSizing="dynamic" class="units-field">
-                    <mat-label>Unites vendues</mat-label>
-                    <mat-select formControlName="unitIds" multiple>
-                      @for (unit of availableUnits()[product.id] ?? []; track unit.id) {
-                        <mat-option [value]="unit.id">{{ unitLabel(unit) }}</mat-option>
-                      }
-                    </mat-select>
-                    <mat-error>Choisissez au moins une unite</mat-error>
-                  </mat-form-field>
-                } @else {
+                <div class="quantity-cell">
                   <mat-form-field subscriptSizing="dynamic" class="quantity-field">
                     <input matInput type="number" min="1" [max]="product.quantity" step="1" formControlName="quantity"
-                           [attr.aria-label]="'Quantite de ' + product.name" />
+                           [attr.aria-label]="'Quantité de ' + product.name" />
                     <mat-error>{{ errorOf(line.controls.quantity) }}</mat-error>
                   </mat-form-field>
-                }
+                  @if (product.serialTracked && (availableUnits()[product.id] ?? []).length) {
+                    <mat-form-field subscriptSizing="dynamic" class="units-field">
+                      <mat-label>IMEI (facultatif)</mat-label>
+                      <mat-select formControlName="unitIds" multiple (selectionChange)="syncQuantity(line)">
+                        @for (unit of availableUnits()[product.id] ?? []; track unit.id) {
+                          <mat-option [value]="unit.id">{{ unitLabel(unit) }}</mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
+                  }
+                </div>
               </td>
               <td class="amount">{{ lineTotal(line) | currency: 'TND' : 'symbol' : '1.3-3' }}</td>
               <td>
@@ -70,7 +70,7 @@
         </button>
       </div>
     } @else {
-      <app-customer-picker label="Client (obligatoire pour un credit)" (selected)="selectCustomer($event)" />
+      <app-customer-picker label="Client (obligatoire pour un crédit)" (selected)="selectCustomer($event)" />
     }
 
     <h3>Montants</h3>
@@ -86,9 +86,9 @@
     <dl class="totals">
       <dt>Total</dt>
       <dd class="grand-total">{{ total() | currency: 'TND' : 'symbol' : '1.3-3' }}</dd>
-      <dt>Paye</dt>
+      <dt>Payé</dt>
       <dd>{{ paid() | currency: 'TND' : 'symbol' : '1.3-3' }}</dd>
-      <dt>Reste a payer</dt>
+      <dt>Reste à payer</dt>
       <dd [class.due]="remaining() > 0">{{ remaining() | currency: 'TND' : 'symbol' : '1.3-3' }}</dd>
     </dl>
 
@@ -97,7 +97,7 @@
 
     @if (remaining() > 0) {
       <mat-form-field class="full">
-        <mat-label>Echeance du reste (facultatif)</mat-label>
+        <mat-label>Échéance du reste (facultatif)</mat-label>
         <input matInput [matDatepicker]="duePicker" [min]="minDueDate" formControlName="dueDate" />
         <mat-datepicker-toggle matIconSuffix [for]="duePicker" />
         <mat-datepicker #duePicker />

@@ -10,13 +10,13 @@ export type AfterSalesStatus =
   | 'CANCELLED';
 
 export const AFTER_SALES_STATUS_LABELS: Record<AfterSalesStatus, string> = {
-  RECEIVED: 'Recu',
+  RECEIVED: 'Reçu',
   DIAGNOSING: 'Diagnostic',
-  WAITING_FOR_PART: 'Attente piece',
-  IN_REPAIR: 'En reparation',
-  READY: 'Pret',
+  WAITING_FOR_PART: 'Attente pièce',
+  IN_REPAIR: 'En réparation',
+  READY: 'Prêt',
   DELIVERED: 'Livre',
-  CANCELLED: 'Annule',
+  CANCELLED: 'Annulé',
 };
 export const AFTER_SALES_STATUSES = Object.keys(AFTER_SALES_STATUS_LABELS) as AfterSalesStatus[];
 

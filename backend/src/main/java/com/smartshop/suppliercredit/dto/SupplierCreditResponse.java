@@ -1,5 +1,6 @@
 package com.smartshop.suppliercredit.dto;
 
+import com.smartshop.common.credit.CreditSource;
 import com.smartshop.common.payment.CreditStatus;
 import com.smartshop.common.payment.PaymentResponse;
 
@@ -9,12 +10,18 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * Credit fournisseur : achat non solde a sa creation, avec l'historique de ses paiements.
+ * Credit fournisseur avec l'historique de ses paiements : achat non solde a sa creation (PURCHASE)
+ * ou credit saisi a la main (MANUAL).
+ *
+ * @param id        id de l'achat (PURCHASE) ou du credit saisi (MANUAL)
+ * @param createdAt date du credit
  */
 public record SupplierCreditResponse(
-        Long purchaseId,
+        Long id,
+        CreditSource source,
         String reference,
         String supplierInvoiceRef,
+        String description,
         Supplier supplier,
         Instant createdAt,
         String createdBy,
@@ -23,6 +30,7 @@ public record SupplierCreditResponse(
         BigDecimal amountDue,
         LocalDate dueDate,
         CreditStatus status,
+        String cancelReason,
         List<PaymentResponse> payments
 ) {
 

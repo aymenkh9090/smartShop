@@ -208,8 +208,8 @@ public class AfterSalesTicket extends AuditableEntity {
         requireOpen();
         if (underWarranty && !isWarrantyValidOn(receptionDate)) {
             throw invalid(warrantyUntil == null
-                    ? "Appareil non vendu par la boutique : aucune garantie a appliquer"
-                    : "Garantie expiree le %s a la reception".formatted(warrantyUntil));
+                    ? "Appareil non vendu par la boutique : aucune garantie à appliquer"
+                    : "Garantie expirée le %s à la réception".formatted(warrantyUntil));
         }
         this.diagnosis = diagnosis;
         this.repairDescription = repairDescription;
@@ -252,7 +252,7 @@ public class AfterSalesTicket extends AuditableEntity {
         AfterSalesPart part = parts.stream()
                 .filter(p -> p.getId().equals(partId))
                 .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("Piece du ticket " + ticketNumber, partId));
+                .orElseThrow(() -> new ResourceNotFoundException("Pièce du ticket " + ticketNumber, partId));
         parts.remove(part);
         recalculate();
         return part;
@@ -260,7 +260,7 @@ public class AfterSalesTicket extends AuditableEntity {
 
     public void requireInWorkshop() {
         if (!status.isInWorkshop()) {
-            throw new BusinessException("Pieces modifiables uniquement pendant le diagnostic ou la reparation (statut %s)"
+            throw new BusinessException("Pièces modifiables uniquement pendant le diagnostic ou la réparation (statut %s)"
                     .formatted(status));
         }
     }
@@ -273,7 +273,7 @@ public class AfterSalesTicket extends AuditableEntity {
         requireOpen();
         BigDecimal paid = Money.of(amount);
         if (paid.compareTo(getAmountDue()) > 0) {
-            throw invalid("Le paiement (%s) depasse le reste du (%s)".formatted(paid, getAmountDue()));
+            throw invalid("Le paiement (%s) dépasse le reste dû (%s)".formatted(paid, getAmountDue()));
         }
         AfterSalesPayment payment = new AfterSalesPayment(this, paid, method, reference, user, paidAt);
         payments.add(payment);
@@ -285,10 +285,10 @@ public class AfterSalesTicket extends AuditableEntity {
     /** Remise de l'appareil au client : le ticket doit etre pret et solde. */
     public void deliver(String comment, User user, Instant at) {
         if (status != AfterSalesStatus.READY) {
-            throw new BusinessException("Seul un ticket pret peut etre livre (statut %s)".formatted(status));
+            throw new BusinessException("Seul un ticket prêt peut être livré (statut %s)".formatted(status));
         }
         if (getAmountDue().signum() > 0) {
-            throw new BusinessException("Reste a payer avant livraison : %s".formatted(getAmountDue()));
+            throw new BusinessException("Reste à payer avant livraison : %s".formatted(getAmountDue()));
         }
         deliveredAt = at;
         recordStatus(AfterSalesStatus.DELIVERED, comment, user, at);
@@ -324,7 +324,7 @@ public class AfterSalesTicket extends AuditableEntity {
         partsTotal = Money.of(parts.stream().map(AfterSalesPart::getLineTotal).reduce(BigDecimal.ZERO, BigDecimal::add));
         totalCost = underWarranty ? Money.ZERO : laborCost.add(partsTotal);
         if (amountPaid.compareTo(totalCost) > 0) {
-            throw new BusinessException("Le montant deja paye (%s) depasse le nouveau cout (%s)"
+            throw new BusinessException("Le montant déjà payé (%s) dépasse le nouveau coût (%s)"
                     .formatted(amountPaid, totalCost));
         }
         paymentStatus = PaymentStatus.of(totalCost, amountPaid);
@@ -332,7 +332,7 @@ public class AfterSalesTicket extends AuditableEntity {
 
     private void requireOpen() {
         if (status.isClosed()) {
-            throw new BusinessException("Le ticket %s est cloture (%s)".formatted(ticketNumber, status));
+            throw new BusinessException("Le ticket %s est clôturé (%s)".formatted(ticketNumber, status));
         }
     }
 

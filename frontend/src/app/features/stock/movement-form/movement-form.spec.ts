@@ -116,7 +116,7 @@ describe('MovementForm', () => {
   it('accepts a negative adjustment but not a zero one', () => {
     component().selectProduct(product(false));
     component().form.controls.type.setValue('ADJUSTMENT');
-    component().form.controls.reason.setValue('Ecart');
+    component().form.controls.reason.setValue('Écart');
 
     component().form.controls.quantity.setValue(0);
     component().submit();
@@ -127,46 +127,61 @@ describe('MovementForm', () => {
     expect(lastRequest().quantity).toBe(-1);
   });
 
-  it('builds one unit per row for a serialized stock in, quantity derived from the rows', () => {
+  it('accepts a serialized stock in without any IMEI', () => {
     component().selectProduct(product(true));
     expect(component().unitMode()).toBe('new');
+    expect(component().form.controls.units.length).toBe(0);
 
+    component().form.controls.quantity.setValue(3);
+    component().submit();
+
+    expect(lastRequest()).toEqual(
+      jasmine.objectContaining({ type: 'STOCK_IN', quantity: 3, units: [], unitIds: null }),
+    );
+  });
+
+  it('sends only the filled IMEI rows, at most one per item', () => {
+    component().selectProduct(product(true));
+    component().addUnitRow();
+    component().addUnitRow();
     component().addUnitRow();
     const rows = component().form.controls.units;
     rows.at(0).setValue({ imei: VALID_IMEI, serialNumber: '' });
     rows.at(1).setValue({ imei: '', serialNumber: 'sn-2' });
+    rows.at(2).setValue({ imei: '', serialNumber: '' });
 
+    component().form.controls.quantity.setValue(1);
     component().submit();
+    expect(stock.recordMovement).not.toHaveBeenCalled();
 
+    component().form.controls.quantity.setValue(5);
+    component().submit();
     expect(lastRequest()).toEqual(
       jasmine.objectContaining({
         type: 'STOCK_IN',
-        quantity: 2,
+        quantity: 5,
         units: [
           { imei: VALID_IMEI, serialNumber: null },
           { imei: null, serialNumber: 'sn-2' },
         ],
-        unitIds: null,
       }),
     );
   });
 
-  it('rejects a unit row without any identifier or with an invalid IMEI', () => {
+  it('rejects an invalid IMEI', () => {
     component().selectProduct(product(true));
-    const row = component().form.controls.units.at(0);
+    component().addUnitRow();
+    component().form.controls.units.at(0).setValue({ imei: '490154203237519', serialNumber: '' });
 
-    row.setValue({ imei: '', serialNumber: '' });
-    component().submit();
-    row.setValue({ imei: '490154203237519', serialNumber: '' });
     component().submit();
 
     expect(stock.recordMovement).not.toHaveBeenCalled();
   });
 
-  it('selects existing units for a serialized stock out', () => {
+  it('lets a serialized stock out designate units, or none', () => {
     component().selectProduct(product(true));
     component().form.controls.type.setValue('STOCK_OUT');
-    component().form.controls.reason.setValue('Ecran casse');
+    component().form.controls.reason.setValue('Écran casse');
 
     expect(component().unitMode()).toBe('existing');
     expect(stock.searchUnits).toHaveBeenCalledWith(
@@ -175,7 +190,9 @@ describe('MovementForm', () => {
     );
 
     component().submit();
-    expect(stock.recordMovement).not.toHaveBeenCalled();
+    expect(lastRequest()).toEqual(
+      jasmine.objectContaining({ type: 'STOCK_OUT', quantity: 1, unitIds: [], units: null }),
+    );
 
     component().selectedUnitIds.set([21]);
     component().submit();
@@ -184,10 +201,11 @@ describe('MovementForm', () => {
     );
   });
 
-  it('does not offer adjustments for serialized products', () => {
+  it('offers adjustments for serialized products too', () => {
     component().form.controls.type.setValue('ADJUSTMENT');
     component().selectProduct(product(true));
 
-    expect(component().form.controls.type.value).toBe('STOCK_IN');
+    expect(component().form.controls.type.value).toBe('ADJUSTMENT');
+    expect(component().unitMode()).toBe('none');
   });
 });

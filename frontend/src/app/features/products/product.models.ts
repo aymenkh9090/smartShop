@@ -13,12 +13,12 @@ export type ProductCondition = 'NEW' | 'USED' | 'REFURBISHED';
 
 export const PRODUCT_TYPE_LABELS: Record<ProductType, string> = {
   SMARTPHONE: 'Smartphone',
-  RECEIVER: 'Recepteur',
+  RECEIVER: 'Récepteur',
   IPTV_SUBSCRIPTION: 'Abonnement IPTV',
   CHARGER: 'Chargeur',
   CABLE: 'Cable',
-  EARPHONE: 'Ecouteurs',
-  SMARTWATCH: 'Montre connectee',
+  EARPHONE: 'Écouteurs',
+  SMARTWATCH: 'Montre connectée',
   ACCESSORY: 'Accessoire',
   OTHER: 'Autre',
 };
@@ -26,7 +26,7 @@ export const PRODUCT_TYPE_LABELS: Record<ProductType, string> = {
 export const PRODUCT_CONDITION_LABELS: Record<ProductCondition, string> = {
   NEW: 'Neuf',
   USED: 'Occasion',
-  REFURBISHED: 'Reconditionne',
+  REFURBISHED: 'Reconditionné',
 };
 
 export const PRODUCT_TYPES = Object.keys(PRODUCT_TYPE_LABELS) as ProductType[];
@@ -57,8 +57,9 @@ export interface Product {
 }
 
 /** La quantite n'est jamais envoyee : elle evolue uniquement par les mouvements de stock. */
+/** Saisie simple : nom, categorie, type et prix de vente suffisent (SKU genere si vide). */
 export interface ProductRequest {
-  sku: string;
+  sku: string | null;
   barcode: string | null;
   reference: string | null;
   name: string;
@@ -68,7 +69,7 @@ export interface ProductRequest {
   condition: ProductCondition;
   brand: string | null;
   model: string | null;
-  purchasePrice: number;
+  purchasePrice: number | null;
   salePrice: number;
   minStock: number;
   serialTracked: boolean;

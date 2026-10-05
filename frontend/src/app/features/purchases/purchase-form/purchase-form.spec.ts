@@ -72,14 +72,30 @@ describe('PurchaseForm', () => {
     expect(c().remaining()).toBe(35);
   });
 
-  it('sends one unit per IMEI row for a serialized product', () => {
+  it('receives a serialized product by quantity, IMEI optional', () => {
+    c().selectSupplier({ id: 1, name: 'TechDistrib' } as Supplier);
+    c().addProduct(product(5, 1100, true));
+    c().form.controls.lines.at(0).controls.quantity.setValue(3);
+
+    c().submit();
+
+    const request: PurchaseRequest = purchases.create.calls.mostRecent().args[0];
+    expect(request.items).toEqual([{ productId: 5, quantity: 3, unitCost: 1100, units: [] }]);
+  });
+
+  it('sends the filled IMEI rows for a serialized product, at most one per item', () => {
     c().selectSupplier({ id: 1, name: 'TechDistrib' } as Supplier);
     c().addProduct(product(5, 1100, true));
     const line = c().form.controls.lines.at(0);
     c().addUnitRow(line);
+    c().addUnitRow(line);
+    c().addUnitRow(line);
+    line.controls.units.at(2).setValue({ imei: '', serialNumber: '' });
     line.controls.units.at(0).setValue({ imei: VALID_IMEI, serialNumber: '' });
     line.controls.units.at(1).setValue({ imei: '', serialNumber: 'SN-2' });
+    expect(c().blockingError()).toContain("plus d'IMEI");
 
+    line.controls.quantity.setValue(2);
     expect(c().total()).toBe(2200);
     c().submit();
 
@@ -100,6 +116,7 @@ describe('PurchaseForm', () => {
   it('rejects an invalid IMEI before calling the API', () => {
     c().selectSupplier({ id: 1, name: 'TechDistrib' } as Supplier);
     c().addProduct(product(5, 1100, true));
+    c().addUnitRow(c().form.controls.lines.at(0));
     c().form.controls.lines.at(0).controls.units.at(0).setValue({ imei: '490154203237519', serialNumber: '' });
 
     c().submit();

@@ -59,16 +59,16 @@ export class SaleDetail implements OnInit {
     if (!sale) {
       return;
     }
-    askPayment(this.dialog, { title: `Encaisser - ${sale.reference}`, amountDue: sale.amountDue })
+    askPayment(this.dialog, { title: `Encaisser - ${sale.reference}`, amountDue: sale.amountDue, creditDate: sale.createdAt })
       .pipe(
         filter((payment): payment is PaymentRequest => !!payment),
-        switchMap((payment) => this.creditService.pay(sale.id, payment)),
+        switchMap((payment) => this.creditService.pay({ source: 'SALE', id: sale.id }, payment)),
         switchMap(() => this.saleService.get(sale.id)),
       )
       .subscribe({
         next: (updated) => {
           this.sale.set(updated);
-          this.notifications.success('Paiement enregistre');
+          this.notifications.success('Paiement enregistré');
         },
         error: (error: unknown) => this.notifications.error(error),
       });
@@ -81,7 +81,7 @@ export class SaleDetail implements OnInit {
     }
     askReason(this.dialog, {
       title: `Annuler la vente ${sale.reference}`,
-      message: 'Le stock et les IMEI seront restitues. Les remboursements eventuels sont a traiter a part.',
+      message: 'Le stock et les IMEI seront restitués. Les remboursements éventuels sont à traiter à part.',
       confirmLabel: 'Annuler la vente',
     })
       .pipe(
@@ -91,7 +91,7 @@ export class SaleDetail implements OnInit {
       .subscribe({
         next: (cancelled) => {
           this.sale.set(cancelled);
-          this.notifications.success('Vente annulee');
+          this.notifications.success('Vente annulée');
         },
         error: (error: unknown) => this.notifications.error(error),
       });

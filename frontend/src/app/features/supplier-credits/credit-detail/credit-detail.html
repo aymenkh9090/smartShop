@@ -1,16 +1,21 @@
 @if (credit(); as c) {
   <div class="page-header">
     <h2>
-      Credit {{ c.reference }}
-      <span class="badge" [class.warn]="c.status === 'OVERDUE'" [class.muted]="c.status === 'PAID' || c.status === 'CANCELLED'">
+      Crédit {{ c.reference }}
+      <span class="badge" [class.danger]="c.status === 'OVERDUE'" [class.success]="c.status === 'PAID'" [class.muted]="c.status === 'CANCELLED'">
         {{ statusLabels[c.status] }}
       </span>
     </h2>
     <div>
-      <a mat-button routerLink="/supplier-credits"><mat-icon>arrow_back</mat-icon> Credits</a>
-      <a mat-button [routerLink]="['/purchases', c.purchaseId]"><mat-icon>receipt_long</mat-icon> Voir l'achat</a>
+      <a mat-button routerLink="/supplier-credits"><mat-icon>arrow_back</mat-icon> Crédits</a>
+      @if (c.source === 'PURCHASE') {
+        <a mat-button [routerLink]="['/purchases', c.id]"><mat-icon>receipt_long</mat-icon> Voir l'achat</a>
+      }
+      @if (canCancel()) {
+        <button mat-button type="button" (click)="cancel()"><mat-icon>block</mat-icon> Annuler</button>
+      }
       @if (canReschedule()) {
-        <button mat-stroked-button type="button" (click)="reschedule()"><mat-icon>event</mat-icon> Reporter l'echeance</button>
+        <button mat-stroked-button type="button" (click)="reschedule()"><mat-icon>event</mat-icon> Reporter l'échéance</button>
       }
       @if (isOpen()) {
         <button mat-flat-button type="button" (click)="pay()"><mat-icon>payments</mat-icon> Payer</button>
@@ -22,26 +27,37 @@
     <dl class="info">
       <dt>Fournisseur</dt>
       <dd>{{ c.supplier.name }}{{ c.supplierInvoiceRef ? ' - facture ' + c.supplierInvoiceRef : '' }}</dd>
-      <dt>Date de l'achat</dt>
-      <dd>{{ c.createdAt | date: 'dd/MM/yyyy HH:mm' }} par {{ c.createdBy }}</dd>
-      <dt>Echeance</dt>
+      @if (c.source === 'PURCHASE') {
+        <dt>Date de l'achat</dt>
+        <dd>{{ c.createdAt | date: 'dd/MM/yyyy HH:mm' }} par {{ c.createdBy }}</dd>
+      } @else {
+        <dt>Objet</dt>
+        <dd>{{ c.description || '-' }}</dd>
+        <dt>Date du crédit</dt>
+        <dd>{{ c.createdAt | date: 'dd/MM/yyyy' }} (saisi par {{ c.createdBy }})</dd>
+      }
+      <dt>Échéance</dt>
       <dd>{{ c.dueDate ? (c.dueDate | date: 'dd/MM/yyyy') : 'Aucune' }}</dd>
+      @if (c.cancelReason) {
+        <dt>Motif d'annulation</dt>
+        <dd>{{ c.cancelReason }}</dd>
+      }
     </dl>
 
     <dl class="totals">
       <dt>Montant total</dt><dd>{{ c.total | currency: 'TND' : 'symbol' : '1.3-3' }}</dd>
-      <dt>Deja paye</dt><dd>{{ c.amountPaid | currency: 'TND' : 'symbol' : '1.3-3' }}</dd>
+      <dt>Déjà payé</dt><dd>{{ c.amountPaid | currency: 'TND' : 'symbol' : '1.3-3' }}</dd>
       <dt>Reste du</dt><dd class="grand-total" [class.due]="c.amountDue > 0">{{ c.amountDue | currency: 'TND' : 'symbol' : '1.3-3' }}</dd>
     </dl>
 
     <h3>Historique des paiements</h3>
     @if (c.payments.length) {
       <table class="detail-table">
-        <thead><tr><th>Date</th><th>Moyen</th><th>Reference</th><th>Par</th><th class="amount">Montant</th></tr></thead>
+        <thead><tr><th>Date</th><th>Moyen</th><th>Référence</th><th>Par</th><th class="amount">Montant</th></tr></thead>
         <tbody>
           @for (payment of c.payments; track payment.id) {
             <tr>
-              <td>{{ payment.paidAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+              <td>{{ payment.paidAt | date: 'dd/MM/yyyy' }}</td>
               <td>{{ methodLabel(payment.method) }}</td>
               <td>{{ payment.reference }}</td>
               <td>{{ payment.createdBy }}</td>

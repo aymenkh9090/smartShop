@@ -19,7 +19,7 @@ import { PageRequest, emptyPage } from '../../../core/models/page';
 import { CREDIT_STATUSES, CREDIT_STATUS_LABELS, CreditStatus, PaymentRequest } from '../../../core/models/payment';
 import { NotificationService } from '../../../core/services/notification.service';
 import { askPayment } from '../../../shared/components/payment-dialog/payment-dialog';
-import { CustomerCredit, CustomerCreditFilter } from '../customer-credit.models';
+import { CustomerCreditFilter, CustomerCreditSummary, customerCreditLink } from '../customer-credit.models';
 import { CustomerCreditService } from '../customer-credit.service';
 
 /** Valeur du filtre statut : 'OPEN' = credits non soldes, '' = tous. */
@@ -76,13 +76,13 @@ export class CreditList implements OnInit {
         this.creditService.search(query.filter, query).pipe(
           catchError((error: unknown) => {
             this.notifications.error(error);
-            return of(emptyPage<CustomerCredit>());
+            return of(emptyPage<CustomerCreditSummary>());
           }),
           finalize(() => this.loading.set(false)),
         ),
       ),
     ),
-    { initialValue: emptyPage<CustomerCredit>() },
+    { initialValue: emptyPage<CustomerCreditSummary>() },
   );
 
   constructor() {
@@ -95,24 +95,32 @@ export class CreditList implements OnInit {
     this.query.update((query) => ({ ...query, filter: this.toFilter() }));
   }
 
+  protected link(credit: CustomerCreditSummary): (string | number)[] {
+    return customerCreditLink(credit);
+  }
+
   protected statusLabel(status: CreditStatus): string {
     return CREDIT_STATUS_LABELS[status];
   }
 
-  protected isOpen(credit: CustomerCredit): boolean {
+  protected isOpen(credit: CustomerCreditSummary): boolean {
     return credit.status !== 'PAID' && credit.status !== 'CANCELLED';
   }
 
-  protected pay(credit: CustomerCredit): void {
-    askPayment(this.dialog, { title: `Encaisser - ${credit.reference}`, amountDue: credit.amountDue })
+  protected pay(credit: CustomerCreditSummary): void {
+    askPayment(this.dialog, {
+      title: `Encaisser - ${credit.reference}`,
+      amountDue: credit.amountDue,
+      creditDate: credit.createdAt,
+    })
       .pipe(
         filter((payment): payment is PaymentRequest => !!payment),
-        switchMap((payment) => this.creditService.pay(credit.saleId, payment)),
+        switchMap((payment) => this.creditService.pay(credit, payment)),
       )
       .subscribe({
         next: (updated) => {
           this.notifications.success(
-            updated.status === 'PAID' ? `Credit ${updated.reference} solde` : 'Paiement enregistre',
+            updated.status === 'PAID' ? `Crédit ${updated.reference} soldé` : 'Paiement enregistré',
           );
           this.query.update((query) => ({ ...query }));
         },

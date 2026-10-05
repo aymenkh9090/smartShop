@@ -4,13 +4,15 @@ import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 
 import { NotificationService } from '../../../core/services/notification.service';
-import { CustomerCredit } from '../customer-credit.models';
+import { CustomerCreditSummary } from '../customer-credit.models';
 import { CustomerCreditService } from '../customer-credit.service';
 import { CreditList } from './credit-list';
 
 const CREDIT = {
-  saleId: 5,
+  id: 5,
+  source: 'SALE',
   reference: 'V-2026-000005',
+  description: null,
   customer: { id: 1, firstName: 'Ali', lastName: 'Ben Salah', phone: '22333444' },
   createdAt: '2026-10-01T10:00:00Z',
   createdBy: 'seller',
@@ -19,8 +21,7 @@ const CREDIT = {
   amountDue: 500,
   dueDate: '2026-09-28',
   status: 'OVERDUE',
-  payments: [],
-} as CustomerCredit;
+} as CustomerCreditSummary;
 
 describe('CreditList', () => {
   let fixture: ComponentFixture<CreditList>;
@@ -30,7 +31,7 @@ describe('CreditList', () => {
   beforeEach(() => {
     credits = jasmine.createSpyObj<CustomerCreditService>('CustomerCreditService', ['search', 'pay']);
     credits.search.and.returnValue(of({ content: [CREDIT], page: 0, size: 20, totalElements: 1, totalPages: 1 }));
-    credits.pay.and.returnValue(of({ ...CREDIT, amountDue: 0, status: 'PAID' }));
+    credits.pay.and.returnValue(of({ ...CREDIT, amountDue: 0, status: 'PAID', cancelReason: null, payments: [] }));
     dialog = jasmine.createSpyObj<MatDialog>('MatDialog', ['open']);
     TestBed.configureTestingModule({
       imports: [CreditList],
@@ -79,11 +80,11 @@ describe('CreditList', () => {
     create();
     dialog.open.and.returnValue({ afterClosed: () => of({ amount: 500, method: 'CASH', reference: null }) } as never);
 
-    (fixture.componentInstance as unknown as { pay(credit: CustomerCredit): void }).pay(CREDIT);
+    (fixture.componentInstance as unknown as { pay(credit: CustomerCreditSummary): void }).pay(CREDIT);
 
     fixture.detectChanges();
 
-    expect(credits.pay).toHaveBeenCalledWith(5, { amount: 500, method: 'CASH', reference: null });
+    expect(credits.pay).toHaveBeenCalledWith(CREDIT, { amount: 500, method: 'CASH', reference: null });
     expect(credits.search).toHaveBeenCalledTimes(2);
   });
 
@@ -91,7 +92,7 @@ describe('CreditList', () => {
     create();
     dialog.open.and.returnValue({ afterClosed: () => of(undefined) } as never);
 
-    (fixture.componentInstance as unknown as { pay(credit: CustomerCredit): void }).pay(CREDIT);
+    (fixture.componentInstance as unknown as { pay(credit: CustomerCreditSummary): void }).pay(CREDIT);
 
     expect(credits.pay).not.toHaveBeenCalled();
   });

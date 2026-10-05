@@ -114,14 +114,14 @@ describe('ProductForm', () => {
         () =>
           new HttpErrorResponse({
             status: 400,
-            error: { message: 'Donnees invalides', errors: [{ field: 'sku', message: 'deja utilise' }] },
+            error: { message: 'Données invalides', errors: [{ field: 'sku', message: 'déjà utilise' }] },
           }),
       ),
     );
 
     submit();
 
-    expect(form().controls.sku.errors?.['server']).toBe('deja utilise');
+    expect(form().controls.sku.errors?.['server']).toBe('déjà utilise');
     expect(notifications.error).toHaveBeenCalled();
     expect(router.navigate).not.toHaveBeenCalled();
   });

@@ -50,6 +50,7 @@ public class SecurityConfig {
                         // Controle au niveau URL en plus de @PreAuthorize : il s'applique avant la lecture
                         // et la validation du corps, un non-ADMIN recoit donc 403 et jamais un detail de validation.
                         .requestMatchers(HttpMethod.POST, "/api/auth/register").hasRole("ADMIN")
+                        .requestMatchers("/api/users", "/api/users/**").hasRole("ADMIN")
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2

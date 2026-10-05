@@ -8,7 +8,7 @@
 <form class="filters" [formGroup]="filters">
   <mat-form-field class="search">
     <mat-label>Rechercher</mat-label>
-    <input matInput formControlName="q" placeholder="Nom, prenom, telephone, email, CIN..." />
+    <input matInput formControlName="q" placeholder="Nom, prénom, téléphone, email, CIN..." />
     <mat-icon matSuffix>search</mat-icon>
   </mat-form-field>
   <mat-form-field>
@@ -32,7 +32,7 @@
       <td mat-cell *matCellDef="let c">{{ c.lastName }} {{ c.firstName }}</td>
     </ng-container>
     <ng-container matColumnDef="phone">
-      <th mat-header-cell *matHeaderCellDef mat-sort-header>Telephone</th>
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Téléphone</th>
       <td mat-cell *matCellDef="let c">{{ c.phone }}</td>
     </ng-container>
     <ng-container matColumnDef="email">
@@ -46,7 +46,7 @@
     <ng-container matColumnDef="status">
       <th mat-header-cell *matHeaderCellDef>Statut</th>
       <td mat-cell *matCellDef="let c">
-        <span class="badge" [class.muted]="!c.active">{{ c.active ? 'Actif' : 'Inactif' }}</span>
+        <span class="badge" [class.muted]="!c.active" [class.success]="c.active">{{ c.active ? 'Actif' : 'Inactif' }}</span>
       </td>
     </ng-container>
     <ng-container matColumnDef="actions">
@@ -79,7 +79,7 @@
     <tr mat-header-row *matHeaderRowDef="columns()"></tr>
     <tr mat-row *matRowDef="let row; columns: columns()"></tr>
     <tr class="mat-mdc-row" *matNoDataRow>
-      <td class="no-data" [attr.colspan]="columns().length">Aucun client trouve.</td>
+      <td class="no-data" [attr.colspan]="columns().length">Aucun client trouvé.</td>
     </tr>
   </table>
   <mat-paginator [length]="page().totalElements" [pageIndex]="query().page" [pageSize]="query().size"

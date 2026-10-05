@@ -19,7 +19,7 @@ import { CustomerService } from '../customer.service';
   template: `
     <mat-form-field class="picker">
       <mat-label>{{ label() }}</mat-label>
-      <input matInput [formControl]="search" [matAutocomplete]="auto" placeholder="Nom, telephone..." />
+      <input matInput [formControl]="search" [matAutocomplete]="auto" placeholder="Nom, téléphone..." />
       <mat-autocomplete #auto="matAutocomplete" [displayWith]="display" (optionSelected)="onSelected($event)">
         @for (customer of options(); track customer.id) {
           <mat-option [value]="customer">{{ customer.lastName }} {{ customer.firstName }} <small>({{ customer.phone }})</small></mat-option>

@@ -37,7 +37,7 @@ public class AdminAccountInitializer implements ApplicationRunner {
         }
         if (properties.password().length() < MIN_PASSWORD_LENGTH) {
             throw new IllegalStateException(
-                    "ADMIN_PASSWORD doit contenir au moins " + MIN_PASSWORD_LENGTH + " caracteres");
+                    "ADMIN_PASSWORD doit contenir au moins " + MIN_PASSWORD_LENGTH + " caractères");
         }
         userService.create(new UserCreateRequest(properties.username(), properties.email(), properties.password(),
                 "Administrateur", "SmartShop", Role.ADMIN));

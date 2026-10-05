@@ -6,15 +6,30 @@ import { environment } from '../../../environments/environment';
 import { PageRequest, PageResponse } from '../../core/models/page';
 import { PaymentRequest } from '../../core/models/payment';
 import { toHttpParams } from '../../shared/utils/http-params';
-import { CustomerBalance, CustomerCredit, CustomerCreditFilter } from './customer-credit.models';
+import {
+  CustomerBalance,
+  CustomerCredit,
+  CustomerCreditFilter,
+  CustomerCreditRequest,
+  CustomerCreditSource,
+  CustomerCreditSummary,
+} from './customer-credit.models';
+
+/** Reference d'un credit : origine + id (vente ou credit saisi). */
+export interface CustomerCreditRef {
+  source: CustomerCreditSource;
+  id: number;
+}
 
 @Injectable({ providedIn: 'root' })
 export class CustomerCreditService {
   private readonly http = inject(HttpClient);
   private readonly url = `${environment.apiUrl}/customer-credits`;
 
-  search(filter: CustomerCreditFilter, page: PageRequest): Observable<PageResponse<CustomerCredit>> {
-    return this.http.get<PageResponse<CustomerCredit>>(this.url, { params: toHttpParams({ ...filter, ...page }) });
+  search(filter: CustomerCreditFilter, page: PageRequest): Observable<PageResponse<CustomerCreditSummary>> {
+    return this.http.get<PageResponse<CustomerCreditSummary>>(this.url, {
+      params: toHttpParams({ ...filter, ...page }),
+    });
   }
 
   balances(customerId: number | null, page: Omit<PageRequest, 'sort'>): Observable<PageResponse<CustomerBalance>> {
@@ -23,15 +38,28 @@ export class CustomerCreditService {
     });
   }
 
-  get(saleId: number): Observable<CustomerCredit> {
-    return this.http.get<CustomerCredit>(`${this.url}/${saleId}`);
+  create(request: CustomerCreditRequest): Observable<CustomerCredit> {
+    return this.http.post<CustomerCredit>(this.url, request);
   }
 
-  pay(saleId: number, payment: PaymentRequest): Observable<CustomerCredit> {
-    return this.http.post<CustomerCredit>(`${this.url}/${saleId}/payments`, payment);
+  get(credit: CustomerCreditRef): Observable<CustomerCredit> {
+    return this.http.get<CustomerCredit>(this.creditUrl(credit));
   }
 
-  reschedule(saleId: number, dueDate: string | null): Observable<CustomerCredit> {
-    return this.http.patch<CustomerCredit>(`${this.url}/${saleId}/due-date`, { dueDate });
+  pay(credit: CustomerCreditRef, payment: PaymentRequest): Observable<CustomerCredit> {
+    return this.http.post<CustomerCredit>(`${this.creditUrl(credit)}/payments`, payment);
+  }
+
+  reschedule(credit: CustomerCreditRef, dueDate: string | null): Observable<CustomerCredit> {
+    return this.http.patch<CustomerCredit>(`${this.creditUrl(credit)}/due-date`, { dueDate });
+  }
+
+  /** Annule un credit saisi par erreur (sans paiement). */
+  cancel(id: number, reason: string): Observable<CustomerCredit> {
+    return this.http.post<CustomerCredit>(`${this.url}/manual/${id}/cancel`, { reason });
+  }
+
+  private creditUrl(credit: CustomerCreditRef): string {
+    return credit.source === 'MANUAL' ? `${this.url}/manual/${credit.id}` : `${this.url}/${credit.id}`;
   }
 }

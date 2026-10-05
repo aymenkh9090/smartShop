@@ -23,8 +23,8 @@
   }
 }
 
-.row-error {
-  flex-basis: 100%;
-  margin: -0.75rem 0 0.75rem;
-  color: var(--mat-sys-error);
+.hint {
+  margin-top: 0;
+  color: var(--app-text-muted);
+  font: var(--mat-sys-body-small);
 }

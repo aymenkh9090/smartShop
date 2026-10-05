@@ -4,14 +4,15 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
-import { filter, switchMap } from 'rxjs';
+import { Observable, filter, switchMap } from 'rxjs';
 
 import { CREDIT_STATUS_LABELS, PAYMENT_METHOD_LABELS, PaymentMethod, PaymentRequest } from '../../../core/models/payment';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { askPayment } from '../../../shared/components/payment-dialog/payment-dialog';
+import { askReason } from '../../../shared/components/reason-dialog/reason-dialog';
 import { RescheduleResult, askNewDueDate } from '../../../shared/components/reschedule-dialog/reschedule-dialog';
-import { CustomerCredit } from '../customer-credit.models';
+import { CustomerCredit, CustomerCreditSource } from '../customer-credit.models';
 import { CustomerCreditService } from '../customer-credit.service';
 
 @Component({
@@ -28,6 +29,8 @@ export class CreditDetail implements OnInit {
   private readonly auth = inject(AuthService);
 
   readonly id = input.required<string>();
+  /** Origine du credit, fournie par la route (data). */
+  readonly source = input<CustomerCreditSource>('SALE');
 
   protected readonly credit = signal<CustomerCredit | null>(null);
   protected readonly statusLabels = CREDIT_STATUS_LABELS;
@@ -35,10 +38,16 @@ export class CreditDetail implements OnInit {
     const status = this.credit()?.status;
     return !!status && status !== 'PAID' && status !== 'CANCELLED';
   });
-  protected readonly canReschedule = computed(() => this.isOpen() && this.auth.hasAnyRole(['MANAGER']));
+  protected readonly isManager = computed(() => this.auth.hasAnyRole(['MANAGER']));
+  protected readonly canReschedule = computed(() => this.isOpen() && this.isManager());
+  /** Un credit saisi par erreur peut etre annule tant qu'aucun paiement n'est enregistre. */
+  protected readonly canCancel = computed(() => {
+    const credit = this.credit();
+    return !!credit && credit.source === 'MANUAL' && this.isOpen() && credit.amountPaid === 0 && this.isManager();
+  });
 
   ngOnInit(): void {
-    this.creditService.get(Number(this.id())).subscribe({
+    this.creditService.get({ source: this.source(), id: Number(this.id()) }).subscribe({
       next: (credit) => this.credit.set(credit),
       error: (error: unknown) => this.notifications.error(error),
     });
@@ -53,18 +62,17 @@ export class CreditDetail implements OnInit {
     if (!credit) {
       return;
     }
-    askPayment(this.dialog, { title: `Encaisser - ${credit.reference}`, amountDue: credit.amountDue })
-      .pipe(
+    this.run(
+      askPayment(this.dialog, {
+        title: `Encaisser - ${credit.reference}`,
+        amountDue: credit.amountDue,
+        creditDate: credit.createdAt,
+      }).pipe(
         filter((payment): payment is PaymentRequest => !!payment),
-        switchMap((payment) => this.creditService.pay(credit.saleId, payment)),
-      )
-      .subscribe({
-        next: (updated) => {
-          this.credit.set(updated);
-          this.notifications.success(updated.status === 'PAID' ? 'Credit solde' : 'Paiement enregistre');
-        },
-        error: (error: unknown) => this.notifications.error(error),
-      });
+        switchMap((payment) => this.creditService.pay(credit, payment)),
+      ),
+      (updated) => (updated.status === 'PAID' ? 'Crédit soldé' : 'Paiement enregistré'),
+    );
   }
 
   protected reschedule(): void {
@@ -72,17 +80,40 @@ export class CreditDetail implements OnInit {
     if (!credit) {
       return;
     }
-    askNewDueDate(this.dialog, { title: `Echeance - ${credit.reference}`, dueDate: credit.dueDate })
-      .pipe(
+    this.run(
+      askNewDueDate(this.dialog, { title: `Échéance - ${credit.reference}`, dueDate: credit.dueDate }).pipe(
         filter((result): result is RescheduleResult => !!result),
-        switchMap((result) => this.creditService.reschedule(credit.saleId, result.dueDate)),
-      )
-      .subscribe({
-        next: (updated) => {
-          this.credit.set(updated);
-          this.notifications.success('Echeance mise a jour');
-        },
-        error: (error: unknown) => this.notifications.error(error),
-      });
+        switchMap((result) => this.creditService.reschedule(credit, result.dueDate)),
+      ),
+      () => 'Échéance mise à jour',
+    );
+  }
+
+  protected cancel(): void {
+    const credit = this.credit();
+    if (!credit) {
+      return;
+    }
+    this.run(
+      askReason(this.dialog, {
+        title: `Annuler le crédit ${credit.reference}`,
+        message: 'Le crédit restera dans l\'historique avec le statut "Annulé".',
+        confirmLabel: 'Annuler le crédit',
+      }).pipe(
+        filter((reason): reason is string => !!reason),
+        switchMap((reason) => this.creditService.cancel(credit.id, reason)),
+      ),
+      () => 'Crédit annulé',
+    );
+  }
+
+  private run(action: Observable<CustomerCredit>, message: (updated: CustomerCredit) => string): void {
+    action.subscribe({
+      next: (updated) => {
+        this.credit.set(updated);
+        this.notifications.success(message(updated));
+      },
+      error: (error: unknown) => this.notifications.error(error),
+    });
   }
 }

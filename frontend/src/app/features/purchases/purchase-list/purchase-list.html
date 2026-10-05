@@ -6,7 +6,7 @@
 <form class="filters" [formGroup]="filters">
   <mat-form-field class="search">
     <mat-label>Rechercher</mat-label>
-    <input matInput formControlName="q" placeholder="Reference, facture fournisseur, fournisseur..." />
+    <input matInput formControlName="q" placeholder="Référence, facture fournisseur, fournisseur..." />
     <mat-icon matSuffix>search</mat-icon>
   </mat-form-field>
   <mat-form-field>
@@ -19,7 +19,7 @@
     </mat-select>
   </mat-form-field>
   <mat-form-field>
-    <mat-label>Periode</mat-label>
+    <mat-label>Période</mat-label>
     <mat-date-range-input [rangePicker]="picker">
       <input matStartDate formControlName="from" placeholder="Du" />
       <input matEndDate formControlName="to" placeholder="Au" />
@@ -39,7 +39,7 @@
       <td mat-cell *matCellDef="let p">{{ p.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
     </ng-container>
     <ng-container matColumnDef="reference">
-      <th mat-header-cell *matHeaderCellDef>Reference</th>
+      <th mat-header-cell *matHeaderCellDef>Référence</th>
       <td mat-cell *matCellDef="let p"><a [routerLink]="['/purchases', p.id]">{{ p.reference }}</a></td>
     </ng-container>
     <ng-container matColumnDef="supplier">
@@ -61,7 +61,7 @@
     <ng-container matColumnDef="paymentStatus">
       <th mat-header-cell *matHeaderCellDef>Paiement</th>
       <td mat-cell *matCellDef="let p">
-        <span class="badge" [class.warn]="p.paymentStatus !== 'PAID'">{{ paymentStatusLabel(p.paymentStatus) }}</span>
+        <span class="badge" [class.warn]="p.paymentStatus !== 'PAID'" [class.success]="p.paymentStatus === 'PAID'">{{ paymentStatusLabel(p.paymentStatus) }}</span>
       </td>
     </ng-container>
 

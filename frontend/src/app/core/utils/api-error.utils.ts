@@ -6,7 +6,7 @@ import { ApiError, ApiFieldError } from '../models/api-error';
 export function apiErrorMessage(error: unknown, fallback = 'Une erreur est survenue.'): string {
   if (error instanceof HttpErrorResponse) {
     if (error.status === 0) {
-      return 'Serveur injoignable. Verifiez votre connexion.';
+      return 'Serveur injoignable. Vérifiez votre connexion.';
     }
     const message = (error.error as Partial<ApiError> | null)?.message;
     if (message) {

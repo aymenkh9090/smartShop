@@ -137,11 +137,11 @@ export class ProductList implements OnInit {
   protected toggleStatus(product: Product): void {
     const activate = !product.active;
     confirmAction(this.dialog, {
-      title: activate ? 'Reactiver le produit' : 'Desactiver le produit',
+      title: activate ? 'Réactiver le produit' : 'Désactiver le produit',
       message: activate
-        ? `Reactiver "${product.name}" ?`
-        : `Desactiver "${product.name}" ? Il ne sera plus propose a la vente mais reste dans l'historique.`,
-      confirmLabel: activate ? 'Reactiver' : 'Desactiver',
+        ? `Réactiver "${product.name}" ?`
+        : `Désactiver "${product.name}" ? Il ne sera plus proposé à la vente mais reste dans l'historique.`,
+      confirmLabel: activate ? 'Réactiver' : 'Désactiver',
     })
       .pipe(
         filter(Boolean),
@@ -149,7 +149,7 @@ export class ProductList implements OnInit {
       )
       .subscribe({
         next: () => {
-          this.notifications.success(activate ? 'Produit reactive' : 'Produit desactive');
+          this.notifications.success(activate ? 'Produit réactivé' : 'Produit désactivé');
           this.query.update((query) => ({ ...query }));
         },
         error: (error: unknown) => this.notifications.error(error),

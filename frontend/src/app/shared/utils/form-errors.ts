@@ -26,10 +26,10 @@ export function fieldErrorMessage(control: AbstractControl): string {
     return 'Champ obligatoire';
   }
   if (errors['maxlength']) {
-    return `${errors['maxlength'].requiredLength} caracteres maximum`;
+    return `${errors['maxlength'].requiredLength} caractères maximum`;
   }
   if (errors['minlength']) {
-    return `${errors['minlength'].requiredLength} caracteres minimum`;
+    return `${errors['minlength'].requiredLength} caractères minimum`;
   }
   if (errors['email']) {
     return 'Email invalide';
@@ -41,7 +41,7 @@ export function fieldErrorMessage(control: AbstractControl): string {
     return `Valeur maximale : ${errors['max'].max}`;
   }
   if (errors['imei']) {
-    return 'IMEI invalide (15 chiffres avec cle de controle)';
+    return 'IMEI invalide (15 chiffres avec clé de contrôle)';
   }
   if (errors['pattern']) {
     return 'Format invalide';

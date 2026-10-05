@@ -1,26 +1,97 @@
 @if (auth.currentUser(); as user) {
-  <mat-toolbar class="app-toolbar">
-    <span class="app-name">{{ appName }}</span>
-    <span class="spacer"></span>
-    <span class="user-name">{{ user.firstName }} {{ user.lastName }} ({{ user.role }})</span>
-    <button mat-button type="button" (click)="auth.logout()">
-      <mat-icon>logout</mat-icon>
-      Deconnexion
-    </button>
-  </mat-toolbar>
-
   <mat-sidenav-container class="app-container">
-    <mat-sidenav mode="side" opened class="app-sidenav">
-      <mat-nav-list>
-        @for (item of navItems(); track item.path) {
-          <a mat-list-item [routerLink]="item.path" routerLinkActive #rla="routerLinkActive" [activated]="rla.isActive">
-            <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
-            <span matListItemTitle>{{ item.label }}</span>
-          </a>
+    <mat-sidenav class="app-sidenav" [mode]="compact() ? 'over' : 'side'" [opened]="!compact() || menuOpen()"
+                 (closedStart)="menuOpen.set(false)">
+      <div class="brand">
+        <span class="brand-logo"><mat-icon class="filled">storefront</mat-icon></span>
+        <span class="brand-text">
+          <span class="brand-name">{{ appName }}</span>
+          <span class="brand-tagline">Gestion de boutique</span>
+        </span>
+      </div>
+
+      <nav class="nav" aria-label="Navigation principale">
+        @for (group of navGroups(); track group.label) {
+          @if (group.label) {
+            <div class="nav-group-label">{{ group.label }}</div>
+          }
+          <mat-nav-list>
+            @for (item of group.items; track item.path) {
+              <a mat-list-item [routerLink]="item.path" routerLinkActive #rla="routerLinkActive"
+                 [activated]="rla.isActive" (click)="onNavigate()">
+                <mat-icon matListItemIcon [class.filled]="rla.isActive">{{ item.icon }}</mat-icon>
+                <span matListItemTitle>{{ item.label }}</span>
+              </a>
+            }
+          </mat-nav-list>
         }
-      </mat-nav-list>
+      </nav>
+
+      <div class="user-card">
+        <span class="avatar" aria-hidden="true">{{ initials() }}</span>
+        <span class="user-info">
+          <span class="user-name">{{ user.firstName }} {{ user.lastName }}</span>
+          <span class="user-role">{{ roleLabels[user.role] }}</span>
+        </span>
+        <button mat-icon-button type="button" (click)="auth.logout()" matTooltip="Déconnexion" aria-label="Déconnexion">
+          <mat-icon>logout</mat-icon>
+        </button>
+      </div>
     </mat-sidenav>
-    <mat-sidenav-content>
+
+    <mat-sidenav-content class="app-main">
+      <mat-toolbar class="app-toolbar">
+        @if (compact()) {
+          <button mat-icon-button type="button" (click)="menuOpen.set(true)" aria-label="Ouvrir le menu">
+            <mat-icon>menu</mat-icon>
+          </button>
+        }
+        @if (currentSection(); as section) {
+          <div class="section">
+            @if (section.group) {
+              <span class="section-group">{{ section.group }}</span>
+              <mat-icon class="section-sep" aria-hidden="true">chevron_right</mat-icon>
+            }
+            <span class="section-label">{{ section.label }}</span>
+          </div>
+        }
+        <span class="spacer"></span>
+
+        <button mat-icon-button type="button" [matMenuTriggerFor]="themeMenu" matTooltip="Thème" aria-label="Changer de thème">
+          <mat-icon>{{ themeIcon() }}</mat-icon>
+        </button>
+        <mat-menu #themeMenu="matMenu" xPosition="before">
+          @for (option of themeOptions; track option.mode) {
+            <button mat-menu-item type="button" (click)="theme.setMode(option.mode)"
+                    [attr.aria-checked]="theme.mode() === option.mode" role="menuitemradio">
+              <mat-icon>{{ option.icon }}</mat-icon>
+              <span>{{ option.label }}</span>
+              @if (theme.mode() === option.mode) {
+                <mat-icon class="check">check</mat-icon>
+              }
+            </button>
+          }
+        </mat-menu>
+
+        <button class="avatar-button" type="button" [matMenuTriggerFor]="userMenu" aria-label="Menu utilisateur">
+          <span class="avatar small" aria-hidden="true">{{ initials() }}</span>
+          <span class="toolbar-user">{{ user.firstName }} {{ user.lastName }}</span>
+          <mat-icon>expand_more</mat-icon>
+        </button>
+        <mat-menu #userMenu="matMenu" xPosition="before">
+          <div class="menu-header">
+            <strong>{{ user.firstName }} {{ user.lastName }}</strong>
+            <span>{{ user.email }}</span>
+            <span class="badge">{{ roleLabels[user.role] }}</span>
+          </div>
+          <mat-divider />
+          <button mat-menu-item type="button" (click)="auth.logout()">
+            <mat-icon>logout</mat-icon>
+            <span>Déconnexion</span>
+          </button>
+        </mat-menu>
+      </mat-toolbar>
+
       <main class="app-content">
         <router-outlet />
       </main>

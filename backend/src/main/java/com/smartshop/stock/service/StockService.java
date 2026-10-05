@@ -49,7 +49,7 @@ public class StockService {
     static final String DEFAULT_INVENTORY_REASON = "Inventaire";
     static final String SALE_REASON = "Vente";
     static final String PURCHASE_REASON = "Achat";
-    static final String AFTER_SALES_REASON = "Piece SAV";
+    static final String AFTER_SALES_REASON = "Pièce SAV";
     private static final int REASON_MAX_LENGTH = 255;
 
     private final ProductRepository productRepository;
@@ -76,7 +76,7 @@ public class StockService {
     public StockMovement recordSale(Long productId, int quantity, List<Long> unitIds, String saleReference) {
         Product product = lockProduct(productId);
         if (!product.isActive()) {
-            throw new BusinessException("Produit desactive : vente impossible (%s)".formatted(product.getName()));
+            throw new BusinessException("Produit désactivé : vente impossible (%s)".formatted(product.getName()));
         }
         return apply(product, StockMovementType.STOCK_OUT, quantity, SALE_REASON, saleReference,
                 List.of(), unitIds, ProductUnitStatus.SOLD);
@@ -96,7 +96,7 @@ public class StockService {
     public StockMovement recordRepairPart(Long productId, int quantity, List<Long> unitIds, String ticketNumber) {
         Product product = lockProduct(productId);
         if (!product.isActive()) {
-            throw new BusinessException("Produit desactive : utilisation impossible (%s)".formatted(product.getName()));
+            throw new BusinessException("Produit désactivé : utilisation impossible (%s)".formatted(product.getName()));
         }
         return apply(product, StockMovementType.STOCK_OUT, quantity, AFTER_SALES_REASON, ticketNumber,
                 List.of(), unitIds, ProductUnitStatus.SOLD);
@@ -107,7 +107,7 @@ public class StockService {
     public StockMovement recordRepairPartReturn(Long productId, int quantity, List<Long> unitIds,
                                                 String ticketNumber, String reason) {
         return apply(lockProduct(productId), StockMovementType.RETURN, quantity,
-                truncateReason("Retour piece SAV : " + reason), ticketNumber, List.of(), unitIds,
+                truncateReason("Retour pièce SAV : " + reason), ticketNumber, List.of(), unitIds,
                 ProductUnitStatus.SOLD);
     }
 
@@ -128,7 +128,7 @@ public class StockService {
         Set<Long> productIds = new HashSet<>();
         for (InventoryRequest.Line line : request.lines()) {
             if (!productIds.add(line.productId())) {
-                throw badRequest("Produit present plusieurs fois dans l'inventaire : " + line.productId());
+                throw badRequest("Produit présent plusieurs fois dans l'inventaire : " + line.productId());
             }
         }
         String reason = Objects.requireNonNullElse(TextNormalizer.trimToNull(request.reason()), DEFAULT_INVENTORY_REASON);
@@ -142,7 +142,12 @@ public class StockService {
         for (InventoryRequest.Line line : lines) {
             Product product = lockProduct(line.productId());
             if (product.isSerialTracked()) {
-                throw badRequest("'%s' est suivi a l'unite : ajustez-le unite par unite".formatted(product.getName()));
+                long identified = unitRepository.countByProductIdAndStatus(product.getId(), ProductUnitStatus.IN_STOCK);
+                if (line.countedQuantity() < identified) {
+                    throw badRequest(("'%s' : %d unité(s) avec IMEI enregistrée(s) en stock, comptage %d. "
+                            + "Sortez d'abord les unités manquantes par leur IMEI.")
+                            .formatted(product.getName(), identified, line.countedQuantity()));
+                }
             }
             int difference = line.countedQuantity() - product.getQuantity();
             if (difference != 0) {
@@ -186,7 +191,7 @@ public class StockService {
             throw badRequest("Le motif est obligatoire pour ce type de mouvement");
         }
         if (type == StockMovementType.STOCK_IN && !product.isActive()) {
-            throw new BusinessException("Produit desactive : entree en stock impossible");
+            throw new BusinessException("Produit désactivé : entrée en stock impossible");
         }
         List<ProductUnit> units = product.isSerialTracked()
                 ? resolveUnits(product, type, delta, newUnits, unitIds, outgoingStatus)
@@ -202,7 +207,7 @@ public class StockService {
             case STOCK_OUT -> -requirePositive(quantity);
             case ADJUSTMENT -> {
                 if (quantity == 0) {
-                    throw badRequest("Un ajustement doit modifier la quantite");
+                    throw badRequest("Un ajustement doit modifier la quantité");
                 }
                 yield quantity;
             }
@@ -211,7 +216,7 @@ public class StockService {
 
     private static int requirePositive(int quantity) {
         if (quantity <= 0) {
-            throw badRequest("La quantite doit etre strictement positive");
+            throw badRequest("La quantité doit être strictement positive");
         }
         return quantity;
     }
@@ -219,14 +224,15 @@ public class StockService {
     private static List<ProductUnit> requireNoUnits(Product product, List<ProductUnitRequest> newUnits,
                                                     List<Long> unitIds) {
         if (!newUnits.isEmpty() || !unitIds.isEmpty()) {
-            throw badRequest("'%s' n'est pas suivi a l'unite : ne pas fournir d'unites".formatted(product.getName()));
+            throw badRequest("'%s' n'est pas suivi à l'unité : ne pas fournir d'unités".formatted(product.getName()));
         }
         return List.of();
     }
 
     /**
-     * Produits suivis a l'unite : la quantite doit toujours egaler le nombre d'unites en stock.
-     * Une entree cree les unites ; une sortie ou un retour designe des unites existantes.
+     * Produits suivis a l'unite : l'IMEI / numero de serie est facultatif. Le stock peut donc contenir
+     * des unites identifiees et des articles anonymes ; invariant : unites IN_STOCK <= quantite.
+     * Une entree cree les unites fournies ; une sortie ou un retour designe eventuellement des unites existantes.
      */
     private List<ProductUnit> resolveUnits(Product product, StockMovementType type, int delta,
                                            List<ProductUnitRequest> newUnits, List<Long> unitIds,
@@ -234,23 +240,45 @@ public class StockService {
         boolean createsUnits = delta > 0 && type != StockMovementType.RETURN;
         if (createsUnits) {
             if (!unitIds.isEmpty()) {
-                throw badRequest("Une entree cree de nouvelles unites : fournir 'units', pas 'unitIds'");
+                throw badRequest("Une entrée crée de nouvelles unités : fournir 'units', pas 'unitIds'");
             }
             return createUnits(product, newUnits, delta);
         }
         if (!newUnits.isEmpty()) {
-            throw badRequest("Designer les unites existantes concernees avec 'unitIds'");
+            throw badRequest("Désigner les unités existantes concernées avec 'unitIds'");
         }
         // Sortie : unites en stock -> outgoingStatus. Retour : unites sorties ou vendues -> remises en stock.
         boolean returning = delta > 0;
-        return changeUnitsStatus(product, unitIds, Math.abs(delta),
+        int count = Math.abs(delta);
+        List<ProductUnit> units = changeUnitsStatus(product, unitIds, count,
                 returning ? ProductUnitStatus.IN_STOCK : outgoingStatus);
+        if (!returning && product.getQuantity() >= count) {
+            ensureEnoughAnonymousItems(product, count, units.size());
+        }
+        return units;
     }
 
-    private List<ProductUnit> createUnits(Product product, List<ProductUnitRequest> requests, int expected) {
-        if (requests.size() != expected) {
-            throw badRequest("%d unite(s) attendue(s) (une par article), %d fournie(s)".formatted(expected, requests.size()));
+    /**
+     * Les articles sortis sans IMEI sont pris parmi les articles anonymes. S'il n'en reste pas assez,
+     * l'IMEI doit etre designe : sinon des unites resteraient "en stock" alors qu'elles sont sorties.
+     */
+    private void ensureEnoughAnonymousItems(Product product, int count, int designated) {
+        int anonymousOut = count - designated;
+        if (anonymousOut == 0) {
+            return;
         }
+        // Les unites designees ont deja quitte IN_STOCK (flush automatique avant la requete)
+        long identifiedInStock = unitRepository.countByProductIdAndStatus(product.getId(), ProductUnitStatus.IN_STOCK);
+        long anonymousAvailable = product.getQuantity() - designated - identifiedInStock;
+        if (anonymousOut > anonymousAvailable) {
+            throw badRequest(("'%s' : %d article(s) sans IMEI en stock, %d à sortir sans IMEI. "
+                    + "Sélectionnez l'IMEI / numéro de série des unités concernées.")
+                    .formatted(product.getName(), Math.max(0, anonymousAvailable), anonymousOut));
+        }
+    }
+
+    /** Unites fournies a l'entree (facultatives) : au plus une par article, lignes vides ignorees. */
+    private List<ProductUnit> createUnits(Product product, List<ProductUnitRequest> requests, int maximum) {
         Set<String> imeis = new LinkedHashSet<>();
         Set<String> serials = new LinkedHashSet<>();
         List<ProductUnit> units = new ArrayList<>();
@@ -258,26 +286,29 @@ public class StockService {
             String imei = TextNormalizer.trimToNull(request.imei());
             String serial = TextNormalizer.upper(request.serialNumber());
             if (imei == null && serial == null) {
-                throw badRequest("Chaque unite doit avoir un IMEI ou un numero de serie");
+                continue;
             }
             if (imei != null && !imeis.add(imei)) {
                 throw badRequest("IMEI en double dans la saisie : " + imei);
             }
             if (serial != null && !serials.add(serial)) {
-                throw badRequest("Numero de serie en double dans la saisie : " + serial);
+                throw badRequest("Numéro de série en double dans la saisie : " + serial);
             }
             units.add(new ProductUnit(product, imei, serial));
+        }
+        if (units.size() > maximum) {
+            throw badRequest("%d unité(s) fournie(s) pour %d article(s)".formatted(units.size(), maximum));
         }
         if (!imeis.isEmpty()) {
             List<String> existing = unitRepository.findExistingImeis(imeis);
             if (!existing.isEmpty()) {
-                throw new BusinessException("IMEI deja enregistre(s) : " + String.join(", ", existing));
+                throw new BusinessException("IMEI déjà enregistré(s) : " + String.join(", ", existing));
             }
         }
         if (!serials.isEmpty()) {
             List<String> existing = unitRepository.findExistingSerialNumbers(product.getId(), serials);
             if (!existing.isEmpty()) {
-                throw new BusinessException("Numero(s) de serie deja enregistre(s) : " + String.join(", ", existing));
+                throw new BusinessException("Numéro(s) de série déjà enregistré(s) : " + String.join(", ", existing));
             }
         }
         return unitRepository.saveAll(units);
@@ -287,24 +318,24 @@ public class StockService {
                                                 ProductUnitStatus newStatus) {
         Set<Long> ids = new LinkedHashSet<>(unitIds);
         if (ids.size() != unitIds.size()) {
-            throw badRequest("Unite selectionnee plusieurs fois");
+            throw badRequest("Unité sélectionnée plusieurs fois");
         }
-        if (ids.size() != expected) {
-            throw badRequest("%d unite(s) attendue(s), %d selectionnee(s)".formatted(expected, ids.size()));
+        if (ids.size() > expected) {
+            throw badRequest("%d unité(s) sélectionnée(s) pour %d article(s)".formatted(ids.size(), expected));
         }
         List<ProductUnit> units = unitRepository.findAllById(ids);
         if (units.size() != ids.size()) {
-            throw new ResourceNotFoundException("Unite(s) introuvable(s) parmi : " + ids);
+            throw new ResourceNotFoundException("Unité(s) introuvable(s) parmi : " + ids);
         }
         boolean mustBeInStock = newStatus != ProductUnitStatus.IN_STOCK;
         for (ProductUnit unit : units) {
             if (!unit.getProduct().getId().equals(product.getId())) {
-                throw badRequest("L'unite %s n'appartient pas a '%s'".formatted(unit.label(), product.getName()));
+                throw badRequest("L'unité %s n'appartient pas à '%s'".formatted(unit.label(), product.getName()));
             }
             if (unit.isInStock() != mustBeInStock) {
                 throw new BusinessException(mustBeInStock
-                        ? "L'unite %s n'est pas en stock".formatted(unit.label())
-                        : "L'unite %s est deja en stock".formatted(unit.label()));
+                        ? "L'unité %s n'est pas en stock".formatted(unit.label())
+                        : "L'unité %s est déjà en stock".formatted(unit.label()));
             }
             unit.changeStatus(newStatus);
         }

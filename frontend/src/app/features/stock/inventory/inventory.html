@@ -5,12 +5,12 @@
 <form class="form-card" [formGroup]="form" (ngSubmit)="submit()" novalidate>
   <div class="form-grid">
     <mat-form-field>
-      <mat-label>Reference (facultatif)</mat-label>
+      <mat-label>Référence (facultatif)</mat-label>
       <input matInput formControlName="reference" placeholder="INV-2026-10" />
       <mat-error>{{ errorOf(form.controls.reference) }}</mat-error>
     </mat-form-field>
     <mat-form-field>
-      <mat-label>Motif (par defaut : Inventaire)</mat-label>
+      <mat-label>Motif (par défaut : Inventaire)</mat-label>
       <input matInput formControlName="reason" />
       <mat-error>{{ errorOf(form.controls.reason) }}</mat-error>
     </mat-form-field>
@@ -23,9 +23,9 @@
       <thead>
         <tr>
           <th>Produit</th>
-          <th>Stock theorique</th>
-          <th>Quantite comptee</th>
-          <th>Ecart</th>
+          <th>Stock théorique</th>
+          <th>Quantité comptée</th>
+          <th>Écart</th>
           <th></th>
         </tr>
       </thead>
@@ -40,13 +40,13 @@
             <td>
               <mat-form-field class="count-field" subscriptSizing="dynamic">
                 <input matInput type="number" min="0" step="1" formControlName="countedQuantity"
-                       [attr.aria-label]="'Quantite comptee pour ' + line.controls.product.value.name" />
+                       [attr.aria-label]="'Quantité comptée pour ' + line.controls.product.value.name" />
                 <mat-error>{{ errorOf(line.controls.countedQuantity) }}</mat-error>
               </mat-form-field>
             </td>
             <td>
               @if (difference(line); as diff) {
-                <span class="badge" [class.warn]="diff < 0">{{ diff > 0 ? '+' : '' }}{{ diff }}</span>
+                <span class="badge" [class.danger]="diff < 0" [class.success]="diff > 0">{{ diff > 0 ? '+' : '' }}{{ diff }}</span>
               } @else if (difference(line) === 0) {
                 <span class="badge muted">0</span>
               }

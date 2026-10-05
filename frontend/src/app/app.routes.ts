@@ -73,6 +73,12 @@ export const routes: Routes = [
         data: { roles: ['MANAGER'] },
         loadChildren: () => import('./features/suppliers/suppliers.routes').then((m) => m.SUPPLIER_ROUTES),
       },
+      {
+        path: 'users',
+        canActivate: [authGuard],
+        data: { roles: ['ADMIN'] },
+        loadChildren: () => import('./features/users/users.routes').then((m) => m.USER_ROUTES),
+      },
     ],
   },
   { path: '**', redirectTo: '' },

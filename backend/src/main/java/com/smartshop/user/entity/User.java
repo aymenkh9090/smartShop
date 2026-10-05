@@ -54,7 +54,26 @@ public class User extends AuditableEntity {
         this.role = role;
     }
 
+    public void updateProfile(String email, String firstName, String lastName, Role role) {
+        this.email = email;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.role = role;
+    }
+
+    public void changePasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
+
+    public void enable() {
+        this.enabled = true;
+    }
+
     public void disable() {
         this.enabled = false;
+    }
+
+    public boolean isActiveAdmin() {
+        return enabled && role == Role.ADMIN;
     }
 }

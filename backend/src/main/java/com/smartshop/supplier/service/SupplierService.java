@@ -74,7 +74,7 @@ public class SupplierService {
     public Supplier getActiveEntity(Long id) {
         Supplier entity = getEntity(id);
         if (!entity.isActive()) {
-            throw new BusinessException("Fournisseur desactive : operation impossible");
+            throw new BusinessException("Fournisseur désactivé : opération impossible");
         }
         return entity;
     }
@@ -85,6 +85,6 @@ public class SupplierService {
     }
 
     private static BusinessException duplicate(String field, String value) {
-        return new BusinessException("Un fournisseur avec le %s '%s' existe deja".formatted(field, value));
+        return new BusinessException("Un fournisseur avec le %s '%s' existe déjà".formatted(field, value));
     }
 }

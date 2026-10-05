@@ -108,7 +108,7 @@ class PurchaseServiceTest {
 
         assertThatThrownBy(() -> service.create(request))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("depasse le total");
+                .hasMessageContaining("dépasse le total");
     }
 
     private static Product product(Long id) {

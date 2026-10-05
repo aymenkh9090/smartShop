@@ -267,6 +267,6 @@ class AfterSalesServiceTest {
     }
 
     private StockMovement movement(Product product) {
-        return new StockMovement(product, StockMovementType.STOCK_OUT, -1, "Piece SAV", "SAV", technician, List.of());
+        return new StockMovement(product, StockMovementType.STOCK_OUT, -1, "Pièce SAV", "SAV", technician, List.of());
     }
 }

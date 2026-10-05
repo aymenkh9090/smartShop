@@ -1,7 +1,7 @@
 <div class="page-header">
-  <h2>Categories</h2>
+  <h2>Catégories</h2>
   @if (canManage()) {
-    <a mat-flat-button routerLink="new"><mat-icon>add</mat-icon> Nouvelle categorie</a>
+    <a mat-flat-button routerLink="new"><mat-icon>add</mat-icon> Nouvelle catégorie</a>
   }
 </div>
 
@@ -33,7 +33,7 @@
     <tr mat-header-row *matHeaderRowDef="columns()"></tr>
     <tr mat-row *matRowDef="let row; columns: columns()"></tr>
     <tr class="mat-mdc-row" *matNoDataRow>
-      <td class="no-data" [attr.colspan]="columns().length">Aucune categorie.</td>
+      <td class="no-data" [attr.colspan]="columns().length">Aucune catégorie.</td>
     </tr>
   </table>
 </div>

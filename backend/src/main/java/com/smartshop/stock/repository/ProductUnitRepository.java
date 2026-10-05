@@ -1,6 +1,7 @@
 package com.smartshop.stock.repository;
 
 import com.smartshop.stock.entity.ProductUnit;
+import com.smartshop.stock.entity.ProductUnitStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -26,6 +27,8 @@ public interface ProductUnitRepository extends JpaRepository<ProductUnit, Long>,
     @Query("select u.serialNumber from ProductUnit u where u.product.id = :productId and u.serialNumber in :serials")
     List<String> findExistingSerialNumbers(@Param("productId") Long productId,
                                            @Param("serials") Collection<String> serials);
+
+    long countByProductIdAndStatus(Long productId, ProductUnitStatus status);
 
     Optional<ProductUnit> findByImei(String imei);
 

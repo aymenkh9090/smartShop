@@ -110,7 +110,7 @@ class StockServiceTest {
 
         assertThatThrownBy(() -> service.recordMovement(request(1L, STOCK_OUT, 3, "Vol")))
                 .isInstanceOf(InsufficientStockException.class)
-                .hasMessageContaining("2 disponible(s), 3 demande(s)");
+                .hasMessageContaining("2 disponible(s), 3 demandé(s)");
         assertThat(product.getQuantity()).isEqualTo(2);
         verify(movementRepository, never()).save(any());
     }
@@ -152,7 +152,7 @@ class StockServiceTest {
 
         assertThatThrownBy(() -> service.recordMovement(request(1L, STOCK_IN, 1, null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("desactive");
+                .hasMessageContaining("désactivé");
     }
 
     @Test
@@ -163,7 +163,7 @@ class StockServiceTest {
 
         assertThatThrownBy(() -> service.recordMovement(request))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("pas suivi a l'unite");
+                .hasMessageContaining("pas suivi à l'unité");
     }
 
     // ---------- produits suivis a l'unite ----------
@@ -182,14 +182,29 @@ class StockServiceTest {
     }
 
     @Test
-    void serializedStockIn_requiresExactlyOneUnitPerItem() {
+    void serializedStockIn_imeiIsOptional() {
+        Product product = product(1L, 0, true);
+
+        StockMovementResponse withoutUnits = service.recordMovement(
+                new StockMovementRequest(1L, STOCK_IN, 2, null, null, null, null));
+        StockMovementResponse partial = service.recordMovement(new StockMovementRequest(1L, STOCK_IN, 2, null, null,
+                List.of(new ProductUnitRequest(TestImeis.valid(1), null)), null));
+
+        assertThat(product.getQuantity()).isEqualTo(4);
+        assertThat(withoutUnits.units()).isEmpty();
+        assertThat(partial.units()).hasSize(1);
+    }
+
+    @Test
+    void serializedStockIn_acceptsAtMostOneUnitPerItem() {
         product(1L, 0, true);
-        StockMovementRequest request = new StockMovementRequest(1L, STOCK_IN, 2, null, null,
-                List.of(new ProductUnitRequest(TestImeis.valid(1), null)), null);
+        StockMovementRequest request = new StockMovementRequest(1L, STOCK_IN, 1, null, null,
+                List.of(new ProductUnitRequest(TestImeis.valid(1), null), new ProductUnitRequest(TestImeis.valid(2), null)),
+                null);
 
         assertThatThrownBy(() -> service.recordMovement(request))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("2 unite(s) attendue(s)");
+                .hasMessageContaining("2 unité(s) fournie(s) pour 1 article(s)");
     }
 
     @Test
@@ -205,16 +220,44 @@ class StockServiceTest {
                 List.of(new ProductUnitRequest(imei, null)), null);
         assertThatThrownBy(() -> service.recordMovement(known))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("deja enregistre");
+                .hasMessageContaining("déjà enregistré");
     }
 
     @Test
-    void serializedStockIn_requiresAnIdentifierPerUnit() {
-        product(1L, 0, true);
+    void serializedStockIn_ignoresBlankUnitRows() {
+        Product product = product(1L, 0, true);
         StockMovementRequest request = new StockMovementRequest(1L, STOCK_IN, 1, null, null,
                 List.of(new ProductUnitRequest(" ", null)), null);
 
-        assertThatThrownBy(() -> service.recordMovement(request)).hasMessageContaining("IMEI ou un numero de serie");
+        StockMovementResponse response = service.recordMovement(request);
+
+        assertThat(product.getQuantity()).isEqualTo(1);
+        assertThat(response.units()).isEmpty();
+    }
+
+    @Test
+    void serializedStockOut_withoutImei_usesAnonymousItems() {
+        Product product = product(1L, 3, true);
+        when(unitRepository.countByProductIdAndStatus(1L, ProductUnitStatus.IN_STOCK)).thenReturn(1L);
+
+        StockMovementResponse response = service.recordMovement(
+                new StockMovementRequest(1L, STOCK_OUT, 2, "Casse", null, null, null));
+
+        assertThat(product.getQuantity()).isEqualTo(1);
+        assertThat(response.units()).isEmpty();
+    }
+
+    @Test
+    void serializedStockOut_withoutImei_isRejectedWhenOnlyIdentifiedUnitsRemain() {
+        Product product = product(1L, 2, true);
+        when(unitRepository.countByProductIdAndStatus(1L, ProductUnitStatus.IN_STOCK)).thenReturn(1L);
+
+        assertThatThrownBy(() -> service.recordMovement(
+                new StockMovementRequest(1L, STOCK_OUT, 2, "Casse", null, null, null)))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("1 article(s) sans IMEI en stock, 2 à sortir sans IMEI");
+        assertThat(product.getQuantity()).isEqualTo(2);
+        verify(movementRepository, never()).save(any());
     }
 
     @Test
@@ -290,17 +333,26 @@ class StockServiceTest {
     }
 
     @Test
-    void inventory_rejectsDuplicatesAndSerializedProducts() {
+    void inventory_ofSerializedProduct_cannotGoBelowIdentifiedUnits() {
+        Product product = product(2L, 3, true);
+        when(unitRepository.countByProductIdAndStatus(2L, ProductUnitStatus.IN_STOCK)).thenReturn(2L);
+
+        assertThatThrownBy(() -> service.applyInventory(new InventoryRequest(null, null, List.of(
+                new InventoryRequest.Line(2L, 1)))))
+                .hasMessageContaining("2 unité(s) avec IMEI");
+
+        service.applyInventory(new InventoryRequest(null, null, List.of(new InventoryRequest.Line(2L, 2))));
+        assertThat(product.getQuantity()).isEqualTo(2);
+    }
+
+    @Test
+    void inventory_rejectsDuplicates() {
         product(1L, 1, false);
-        product(2L, 1, true);
 
         assertThatThrownBy(() -> service.applyInventory(new InventoryRequest(null, null, List.of(
                 new InventoryRequest.Line(1L, 1), new InventoryRequest.Line(1L, 2)))))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getStatus()).isEqualTo(HttpStatus.BAD_REQUEST));
-        assertThatThrownBy(() -> service.applyInventory(new InventoryRequest(null, null, List.of(
-                new InventoryRequest.Line(2L, 0)))))
-                .hasMessageContaining("suivi a l'unite");
     }
 
     // ---------- helpers ----------

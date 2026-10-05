@@ -4,7 +4,7 @@ import com.jayway.jsonpath.JsonPath;
 import com.smartshop.AbstractIntegrationTest;
 import com.smartshop.common.exception.BusinessException;
 import com.smartshop.common.payment.PaymentMethod;
-import com.smartshop.common.payment.PaymentRequest;
+import com.smartshop.common.payment.CreditPaymentRequest;
 import com.smartshop.customercredit.service.CustomerCreditService;
 import com.smartshop.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -104,7 +104,7 @@ class CreditIntegrationTest extends AbstractIntegrationTest {
         getAs(SELLER, "/api/customer-credits?status=" + status)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(1))
-                .andExpect(jsonPath("$.content[0].saleId").value(expected))
+                .andExpect(jsonPath("$.content[0].id").value(expected))
                 .andExpect(jsonPath("$.content[0].status").value(status));
     }
 
@@ -139,12 +139,12 @@ class CreditIntegrationTest extends AbstractIntegrationTest {
     void invalidPayments_areRejected() throws Exception {
         postAs(SELLER, "/api/customer-credits/%d/payments".formatted(partialSale), payment(200.001))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value(containsString("depasse le reste du")));
+                .andExpect(jsonPath("$.message").value(containsString("dépasse le reste dû")));
         postAs(SELLER, "/api/customer-credits/%d/payments".formatted(paidSale), payment(1))
                 .andExpect(status().isConflict());
         postAs(SELLER, "/api/customer-credits/%d/payments".formatted(cancelledSale), payment(1))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value(containsString("annulee")));
+                .andExpect(jsonPath("$.message").value(containsString("annulée")));
         postAs(SELLER, "/api/customer-credits/%d/payments".formatted(cashSale), payment(1))
                 .andExpect(status().isNotFound());
         postAs(SELLER, "/api/customer-credits/%d/payments".formatted(partialSale), "{\"amount\":0,\"method\":\"CASH\"}")
@@ -164,7 +164,7 @@ class CreditIntegrationTest extends AbstractIntegrationTest {
                 try {
                     // Chaque tentative veut solder les 200 DT restants
                     customerCreditService.receivePayment(pendingSale,
-                            new PaymentRequest(new BigDecimal("200"), PaymentMethod.CASH, null));
+                            new CreditPaymentRequest(new BigDecimal("200"), PaymentMethod.CASH, null, null));
                     succeeded.incrementAndGet();
                 } catch (BusinessException expected) {
                     // credit deja solde par une autre tentative
@@ -243,7 +243,7 @@ class CreditIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.content[0].amountDue").value(600.0))
                 .andExpect(jsonPath("$.content[0].status").value("PARTIALLY_PAID"))
                 .andReturn().getResponse().getContentAsString();
-        long purchaseId = ((Number) JsonPath.read(body, "$.content[0].purchaseId")).longValue();
+        long purchaseId = ((Number) JsonPath.read(body, "$.content[0].id")).longValue();
 
         getAs(MANAGER, "/api/supplier-credits/balances")
                 .andExpect(jsonPath("$.content[0].name").value("TechDistrib"))
@@ -258,6 +258,126 @@ class CreditIntegrationTest extends AbstractIntegrationTest {
         getAs(MANAGER, "/api/supplier-credits/balances").andExpect(jsonPath("$.totalElements").value(0));
         getAs(MANAGER, "/api/supplier-credits?status=PAID").andExpect(jsonPath("$.totalElements").value(1));
         getAs(MANAGER, "/api/supplier-credits?status=CANCELLED").andExpect(jsonPath("$.totalElements").value(0));
+    }
+
+    // ---------- credits saisis a la main ----------
+
+    @Test
+    void manualCustomerCredit_isListedWithSaleCredits_andSettledByInstallments() throws Exception {
+        LocalDate creditDate = LocalDate.now().minusDays(10);
+        String body = postAs(SELLER, "/api/customer-credits", """
+                {"customerId":%d,"amount":500,"creditDate":"%s","dueDate":"%s","description":"iPhone 13"}
+                """.formatted(aliId, creditDate, LocalDate.now().plusDays(20)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.source").value("MANUAL"))
+                .andExpect(jsonPath("$.reference").value(containsString("CC-")))
+                .andExpect(jsonPath("$.amountDue").value(500.0))
+                .andExpect(jsonPath("$.status").value("PENDING"))
+                .andReturn().getResponse().getContentAsString();
+        long creditId = ((Number) JsonPath.read(body, "$.id")).longValue();
+
+        getAs(SELLER, "/api/customer-credits?customerId=%d&open=true".formatted(aliId))
+                .andExpect(jsonPath("$.totalElements").value(3));
+        getAs(SELLER, "/api/customer-credits?q=iphone")
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content[0].source").value("MANUAL"))
+                .andExpect(jsonPath("$.content[0].id").value(creditId));
+        // Solde d'Ali : 200 + 200 (ventes) + 500 (credit saisi)
+        getAs(SELLER, "/api/customer-credits/balances?customerId=" + aliId)
+                .andExpect(jsonPath("$.content[0].openCredits").value(3))
+                .andExpect(jsonPath("$.content[0].outstanding").value(900.0));
+
+        // Tranche datee : le systeme calcule le reste
+        LocalDate paidOn = LocalDate.now().minusDays(5);
+        postAs(SELLER, "/api/customer-credits/manual/%d/payments".formatted(creditId),
+                "{\"amount\":200,\"paidOn\":\"%s\"}".formatted(paidOn))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.amountPaid").value(200.0))
+                .andExpect(jsonPath("$.amountDue").value(300.0))
+                .andExpect(jsonPath("$.status").value("PARTIALLY_PAID"))
+                .andExpect(jsonPath("$.payments[0].method").value("CASH"))
+                .andExpect(jsonPath("$.payments[0].paidAt").value(containsString(paidOn.toString())));
+        postAs(SELLER, "/api/customer-credits/manual/%d/payments".formatted(creditId), payment(300.001))
+                .andExpect(status().isBadRequest());
+        postAs(SELLER, "/api/customer-credits/manual/%d/payments".formatted(creditId), payment(300))
+                .andExpect(jsonPath("$.amountDue").value(0.0))
+                .andExpect(jsonPath("$.status").value("PAID"))
+                .andExpect(jsonPath("$.payments.length()").value(2));
+
+        getAs(SELLER, "/api/customer-credits/balances?customerId=" + aliId)
+                .andExpect(jsonPath("$.content[0].outstanding").value(400.0));
+    }
+
+    @Test
+    void manualCustomerCredit_rejectsInvalidDates() throws Exception {
+        postAs(SELLER, "/api/customer-credits", """
+                {"customerId":%d,"amount":100,"creditDate":"%s"}""".formatted(aliId, LocalDate.now().plusDays(1)))
+                .andExpect(status().isBadRequest());
+        postAs(SELLER, "/api/customer-credits", """
+                {"customerId":%d,"amount":100,"creditDate":"%s","dueDate":"%s"}"""
+                .formatted(aliId, LocalDate.now().minusDays(2), LocalDate.now().minusDays(3)))
+                .andExpect(status().isBadRequest());
+        postAs(SELLER, "/api/customer-credits", "{\"customerId\":%d,\"amount\":0}".formatted(aliId))
+                .andExpect(status().isBadRequest());
+
+        long creditId = id(postAs(SELLER, "/api/customer-credits", """
+                {"customerId":%d,"amount":100,"creditDate":"%s"}""".formatted(aliId, LocalDate.now().minusDays(2))));
+        postAs(SELLER, "/api/customer-credits/manual/%d/payments".formatted(creditId),
+                "{\"amount\":10,\"paidOn\":\"%s\"}".formatted(LocalDate.now().minusDays(3)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(containsString("précède")));
+        postAs(SELLER, "/api/customer-credits/manual/%d/payments".formatted(creditId),
+                "{\"amount\":10,\"paidOn\":\"%s\"}".formatted(LocalDate.now().plusDays(1)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void manualCustomerCredit_canBeCancelledByManagersOnlyWhileUnpaid() throws Exception {
+        long creditId = id(postAs(SELLER, "/api/customer-credits", "{\"customerId\":%d,\"amount\":80}".formatted(monaId)));
+        long paidCredit = id(postAs(SELLER, "/api/customer-credits", "{\"customerId\":%d,\"amount\":80}".formatted(monaId)));
+        postAs(SELLER, "/api/customer-credits/manual/%d/payments".formatted(paidCredit), payment(10));
+
+        postAs(SELLER, "/api/customer-credits/manual/%d/cancel".formatted(creditId), "{\"reason\":\"Erreur\"}")
+                .andExpect(status().isForbidden());
+        postAs(MANAGER, "/api/customer-credits/manual/%d/cancel".formatted(paidCredit), "{\"reason\":\"Erreur\"}")
+                .andExpect(status().isConflict());
+        postAs(MANAGER, "/api/customer-credits/manual/%d/cancel".formatted(creditId), "{\"reason\":\"Erreur de saisie\"}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CANCELLED"))
+                .andExpect(jsonPath("$.cancelReason").value("Erreur de saisie"));
+
+        postAs(SELLER, "/api/customer-credits/manual/%d/payments".formatted(creditId), payment(10))
+                .andExpect(status().isConflict());
+        getAs(SELLER, "/api/customer-credits?status=CANCELLED").andExpect(jsonPath("$.totalElements").value(2));
+    }
+
+    @Test
+    void manualSupplierCredit_isSettledByInstallments() throws Exception {
+        String body = postAs(MANAGER, "/api/supplier-credits", """
+                {"supplierId":%d,"amount":3000,"description":"Lot ecouteurs"}""".formatted(supplierId))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.source").value("MANUAL"))
+                .andExpect(jsonPath("$.reference").value(containsString("CF-")))
+                .andReturn().getResponse().getContentAsString();
+        long creditId = ((Number) JsonPath.read(body, "$.id")).longValue();
+        postAs(SELLER, "/api/supplier-credits", "{\"supplierId\":%d,\"amount\":10}".formatted(supplierId))
+                .andExpect(status().isForbidden());
+
+        // Achat a credit (600 dus) + credit saisi (3000)
+        getAs(MANAGER, "/api/supplier-credits/balances")
+                .andExpect(jsonPath("$.content[0].openCredits").value(2))
+                .andExpect(jsonPath("$.content[0].outstanding").value(3600.0));
+
+        postAs(MANAGER, "/api/supplier-credits/manual/%d/payments".formatted(creditId),
+                "{\"amount\":1000,\"method\":\"CHECK\",\"reference\":\"CHQ-1\"}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.amountDue").value(2000.0))
+                .andExpect(jsonPath("$.status").value("PARTIALLY_PAID"));
+        getAs(MANAGER, "/api/supplier-credits/manual/" + creditId)
+                .andExpect(jsonPath("$.payments[0].reference").value("CHQ-1"));
+        getAs(MANAGER, "/api/supplier-credits?q=ecouteurs")
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content[0].amountDue").value(2000.0));
     }
 
     // ---------- helpers ----------

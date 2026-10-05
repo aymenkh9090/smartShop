@@ -20,7 +20,14 @@ description: Regles pour coder dans frontend/ (Angular 20 standalone) - pages, c
 - Template : control flow natif (`@if`, `@for` avec `track`).
 - Les guards ne sont qu'un confort UX : l'autorisation reelle est cote backend.
 - Montants affiches avec le pipe `currency` / `number`, jamais d'arrondi manuel (locale `fr`, devise `TND` : `currency: 'TND' : 'symbol' : '1.3-3'`).
-- UI : Angular Material 20 (pas de `@angular/animations`, ne pas importer `NoopAnimationsModule`). Classes globales dans `styles.scss` : `page-header`, `filters`, `table-container`, `form-card`, `form-grid`, `form-actions`, `badge`.
+- UI : Angular Material 20 (pas de `@angular/animations`, ne pas importer `NoopAnimationsModule`). Classes globales dans `styles.scss` : `page-header` (+ `page-title` / `page-subtitle` / `back-link`), `filters`, `table-container`, `form-card`, `form-section` (titre + aide a gauche, champs a droite), `form-grid`, `form-actions`, `badge`, `detail-table`.
+- **Textes affiches en francais correctement accentue** (libelles, messages, tooltips, `aria-label`). Le code et les commentaires restent en ASCII.
+- Barre laterale sombre dans les deux themes : jetons `--sidebar-*` (`styles.scss`).
+- Libelles / descriptions des roles : `ROLE_LABELS`, `ROLE_DESCRIPTIONS` (`core/models/auth.models.ts`), ne pas les dupliquer.
+- Design system (`styles.scss`) : theme M3 indigo (`_theme-colors.scss`, genere par `ng g @angular/material:theme-color`), police Inter, icones Material Symbols (`MAT_ICON_DEFAULT_OPTIONS`, classe `filled` pour l'icone pleine).
+- Mode clair / sombre : `ThemeService` (clair / sombre / systeme, memorise) pilote `color-scheme` sur `<html>`. **Jamais de couleur en dur dans un composant** : utiliser les jetons `--app-*` (surface, border, text-muted...) et `--status-*` (success / warning / danger / info / neutral), definis avec `light-dark()`. Un canvas (Chart.js) lit `ThemeService.isDark()`.
+- Pastilles : `badge` + `success` (actif, paye, pret), `warn` (a regler), `danger` (en retard, stock faible), `muted` (clos, inactif) ; sans modificateur = info. Le libelle porte toujours le sens.
+- Coquille : menu groupe dans `app.ts` (`NAV_GROUPS`, filtre par role, groupes vides masques), menu escamotable sous 960px. Ajouter une page = l'ajouter dans un groupe.
 
 ## Patterns etablis (phase 3)
 - Feature = `<f>.models.ts`, `<f>.service.ts`, `<f>.routes.ts` (lazy, `data: { roles }` sur new/edit), `<f>-list/`, `<f>-form/`.

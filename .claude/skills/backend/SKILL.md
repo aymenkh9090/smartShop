@@ -17,10 +17,11 @@ description: Regles pour coder dans backend/ (Spring Boot 4, Java 21) - nouvelle
 - Montants : `BigDecimal` (colonne `numeric(12,3)` - le dinar a 3 decimales). Jamais `double`.
 - Erreurs : lever `ResourceNotFoundException` / `BusinessException` (ou une sous-classe) ; `GlobalExceptionHandler` produit le JSON. Jamais de try/catch qui avale une erreur.
 - Mouvements de stock, paiements, statuts SAV : toujours historises, jamais une simple mise a jour de champ.
-- **Stock : `Product.changeQuantity` n'est appele que par `StockService`** (verrou `findByIdForUpdate`, mouvement trace). Ventes, achats, SAV doivent passer par `StockService` dans leur propre transaction, jamais modifier la quantite eux-memes. Produits `serialTracked` : quantite = nombre d'unites `IN_STOCK`.
+- **Stock : `Product.changeQuantity` n'est appele que par `StockService`** (verrou `findByIdForUpdate`, mouvement trace). Ventes, achats, SAV doivent passer par `StockService` dans leur propre transaction, jamais modifier la quantite eux-memes. Produits `serialTracked` : IMEI facultatif, invariant unites `IN_STOCK` <= quantite (articles anonymes = la difference).
 - Methodes internes appelees par une autre operation metier : `@Transactional(propagation = MANDATORY)` (ex. `StockService.recordSale`) pour garantir qu'elles s'executent dans la transaction de l'appelant.
 - Agregats (Sale, Purchase) : les montants sont calcules et verifies par l'entite (`complete()`), jamais saisis par le client ; montants via `Money` (3 decimales, HALF_UP).
 - Tester l'atomicite avec un echec sur une ligne traitee APRES une ligne reussie (sinon le rollback n'est pas reellement teste).
+- Credits saisis a la main : `ManualCredit` / `ManualCreditPayment` (`common/credit`, `@MappedSuperclass`) ; listes, soldes et dashboard passent par la vue `XxxCreditEntry` (`@Subselect` union ventes/achats + credits saisis, `@Id` = reference). Filtre statut commun : `CreditStatusSpecifications`.
 - Credits : jamais de colonne "reste du" modifiable ; toujours recalcule depuis les paiements dans l'agregat (`receivePayment` / `makePayment`, sous verrou). Statut `CreditStatus.of(...)` en Java ET en Specification SQL : garder les deux coherents (test parametre par statut).
 - Date du jour metier (echeances) : `BusinessCalendar.today()` (fuseau Africa/Tunis), jamais `LocalDate.now()`.
 - Verifier un test de concurrence en retirant temporairement le verrou : il doit echouer.

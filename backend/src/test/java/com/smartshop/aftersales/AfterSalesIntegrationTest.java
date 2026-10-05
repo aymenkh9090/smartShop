@@ -101,7 +101,7 @@ class AfterSalesIntegrationTest extends AbstractIntegrationTest {
         getAs(MANAGER, "/api/stock/movements?q=" + number)
                 .andExpect(jsonPath("$.totalElements").value(1))
                 .andExpect(jsonPath("$.content[0].type").value("STOCK_OUT"))
-                .andExpect(jsonPath("$.content[0].reason").value("Piece SAV"));
+                .andExpect(jsonPath("$.content[0].reason").value("Pièce SAV"));
 
         moveTo(ticketId, "IN_REPAIR").andExpect(status().isOk());
         moveTo(ticketId, "READY").andExpect(status().isOk());
@@ -111,7 +111,7 @@ class AfterSalesIntegrationTest extends AbstractIntegrationTest {
 
         postAs(SELLER, "/api/after-sales/%d/deliver".formatted(ticketId), "{}")
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value(containsString("Reste a payer")));
+                .andExpect(jsonPath("$.message").value(containsString("Reste à payer")));
         postAs(SELLER, "/api/after-sales/%d/deliver".formatted(ticketId),
                 "{\"payments\":[{\"amount\":100,\"method\":\"CARD\"}],\"comment\":\"Teste devant le client\"}")
                 .andExpect(status().isOk())

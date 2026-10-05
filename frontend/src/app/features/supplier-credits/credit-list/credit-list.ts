@@ -19,7 +19,7 @@ import { PageRequest, emptyPage } from '../../../core/models/page';
 import { CREDIT_STATUSES, CREDIT_STATUS_LABELS, CreditStatus, PaymentRequest } from '../../../core/models/payment';
 import { NotificationService } from '../../../core/services/notification.service';
 import { askPayment } from '../../../shared/components/payment-dialog/payment-dialog';
-import { SupplierCredit, SupplierCreditFilter } from '../supplier-credit.models';
+import { SupplierCreditFilter, SupplierCreditSummary, supplierCreditLink } from '../supplier-credit.models';
 import { SupplierCreditService } from '../supplier-credit.service';
 
 /** Valeur du filtre statut : 'OPEN' = credits non soldes, '' = tous. */
@@ -77,13 +77,13 @@ export class CreditList implements OnInit {
         this.creditService.search(query.filter, query).pipe(
           catchError((error: unknown) => {
             this.notifications.error(error);
-            return of(emptyPage<SupplierCredit>());
+            return of(emptyPage<SupplierCreditSummary>());
           }),
           finalize(() => this.loading.set(false)),
         ),
       ),
     ),
-    { initialValue: emptyPage<SupplierCredit>() },
+    { initialValue: emptyPage<SupplierCreditSummary>() },
   );
 
   constructor() {
@@ -96,24 +96,32 @@ export class CreditList implements OnInit {
     this.query.update((query) => ({ ...query, filter: this.toFilter() }));
   }
 
+  protected link(credit: SupplierCreditSummary): (string | number)[] {
+    return supplierCreditLink(credit);
+  }
+
   protected statusLabel(status: CreditStatus): string {
     return CREDIT_STATUS_LABELS[status];
   }
 
-  protected isOpen(credit: SupplierCredit): boolean {
+  protected isOpen(credit: SupplierCreditSummary): boolean {
     return credit.status !== 'PAID' && credit.status !== 'CANCELLED';
   }
 
-  protected pay(credit: SupplierCredit): void {
-    askPayment(this.dialog, { title: `Payer le fournisseur - ${credit.reference}`, amountDue: credit.amountDue })
+  protected pay(credit: SupplierCreditSummary): void {
+    askPayment(this.dialog, {
+      title: `Payer le fournisseur - ${credit.reference}`,
+      amountDue: credit.amountDue,
+      creditDate: credit.createdAt,
+    })
       .pipe(
         filter((payment): payment is PaymentRequest => !!payment),
-        switchMap((payment) => this.creditService.pay(credit.purchaseId, payment)),
+        switchMap((payment) => this.creditService.pay(credit, payment)),
       )
       .subscribe({
         next: (updated) => {
           this.notifications.success(
-            updated.status === 'PAID' ? `Achat ${updated.reference} solde` : 'Paiement enregistre',
+            updated.status === 'PAID' ? `Achat ${updated.reference} soldé` : 'Paiement enregistré',
           );
           this.query.update((query) => ({ ...query }));
         },
