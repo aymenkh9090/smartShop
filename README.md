@@ -108,6 +108,12 @@ npm install
 npm start                  # http://localhost:4200
 ```
 
+### Déploiement (démo gratuite)
+
+Frontend sur **Netlify**, API sur **Render** (image Docker `backend/Dockerfile`, profil Spring `prod`), base **Neon**.
+Fichiers : `netlify.toml`, `render.yaml`, `backend/src/main/resources/application-prod.yml`.
+Guide pas à pas : [`docs/deploiement.md`](docs/deploiement.md).
+
 ## Authentification et rôles
 
 ### Premier démarrage

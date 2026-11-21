@@ -5,6 +5,7 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "build:netlify": "ng build --define \"SMARTSHOP_API_URL='$SMARTSHOP_API_URL'\" --define \"SMARTSHOP_DEMO_USERNAME='$DEMO_USERNAME'\" --define \"SMARTSHOP_DEMO_PASSWORD='$DEMO_PASSWORD'\"",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "test:ci": "ng test --watch=false --browsers=ChromeHeadless"

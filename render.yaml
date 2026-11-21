@@ -1,0 +1,33 @@
+# Blueprint Render : API SmartShop sur l'offre gratuite (Render > New > Blueprint).
+# Les valeurs "sync: false" sont demandees a la creation et ne sont jamais versionnees.
+services:
+  - type: web
+    name: smartshop-api
+    runtime: docker
+    plan: free
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true
+    envVars:
+      # PostgreSQL (Neon) : hote "direct" (sans -pooler), voir docs/deploiement.md
+      - key: DB_HOST
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      # Secret JWT genere par Render (256 bits)
+      - key: JWT_SECRET
+        generateValue: true
+      # URL du site Netlify, ex. https://smartshop-demo.netlify.app
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      # Compte ADMIN cree au premier demarrage (base vide)
+      - key: ADMIN_USERNAME
+        value: admin
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false

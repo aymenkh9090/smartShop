@@ -1,30 +1,12 @@
 <div class="login-page">
-  <aside class="brand-panel" aria-hidden="true">
-    <div class="brand">
-      <span class="brand-logo"><mat-icon class="filled">storefront</mat-icon></span>
-      <span>SmartShop</span>
-    </div>
-    <div class="pitch">
-      <h2>Toute la boutique, au même endroit.</h2>
-      <p>Ventes, stock, crédits et service après-vente, pour les smartphones, accessoires et abonnements.</p>
-      <ul>
-        <li><mat-icon>point_of_sale</mat-icon> Caisse rapide et ventes à crédit</li>
-        <li><mat-icon>inventory_2</mat-icon> Stock et suivi IMEI en temps réel</li>
-        <li><mat-icon>build</mat-icon> SAV suivi de la réception à la livraison</li>
-      </ul>
-    </div>
-    <span class="footer">© SmartShop</span>
-  </aside>
+  <main class="login">
+    <header class="login-head">
+      <span class="brand-logo" aria-hidden="true"><mat-icon class="filled">storefront</mat-icon></span>
+      <h1>Connexion à SmartShop</h1>
+      <p class="subtitle">Ventes, stock, crédits et SAV de votre boutique.</p>
+    </header>
 
-  <main class="form-panel">
-    <section class="login">
-      <div class="mobile-brand">
-        <span class="brand-logo"><mat-icon class="filled">storefront</mat-icon></span>
-        <span>SmartShop</span>
-      </div>
-      <h1>Connexion</h1>
-      <p class="subtitle">Connectez-vous pour accéder à votre espace.</p>
-
+    <section class="login-card">
       <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
         <mat-form-field>
           <mat-label>Nom d'utilisateur ou email</mat-label>
@@ -46,6 +28,13 @@
           <mat-error>{{ errorOf(form.controls.password) }}</mat-error>
         </mat-form-field>
 
+        @if (serverSlow()) {
+          <p class="server-slow" role="status">
+            <mat-icon>hourglass_top</mat-icon>
+            Le serveur de démonstration démarre (hébergement gratuit en veille), cela peut prendre jusqu'à une minute.
+          </p>
+        }
+
         @if (errorMessage(); as message) {
           <p class="form-error" role="alert"><mat-icon>error</mat-icon> {{ message }}</p>
         }
@@ -55,5 +44,17 @@
         </button>
       </form>
     </section>
+
+    @if (demoAccount; as demo) {
+      <aside class="demo" aria-label="Compte de démonstration">
+        <div class="demo-text">
+          <strong>Compte de démonstration</strong>
+          <span>Identifiant <code>{{ demo.username }}</code> · mot de passe <code>{{ demo.password }}</code></span>
+        </div>
+        <button mat-stroked-button type="button" (click)="fillDemo()">Remplir</button>
+      </aside>
+    }
+
+    <p class="footer">© SmartShop · Gestion de boutique</p>
   </main>
 </div>

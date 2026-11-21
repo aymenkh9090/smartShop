@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 
 import { AuthService } from '../../../core/services/auth.service';
 import { SELLER } from '../../../core/testing/auth.fixtures';
@@ -68,5 +68,29 @@ describe('Login', () => {
     const alert = (fixture.nativeElement as HTMLElement).querySelector('[role=alert]');
     expect(alert?.textContent).toContain('Identifiants invalides');
     expect(router.navigateByUrl).not.toHaveBeenCalled();
+  });
+
+  it('tells the user when the server is slow to answer (free hosting waking up)', fakeAsync(() => {
+    const response = new Subject<typeof SELLER>();
+    auth.login.and.returnValue(response);
+    const status = () => (fixture.nativeElement as HTMLElement).querySelector('.server-slow');
+
+    fillAndSubmit();
+    tick(4000);
+    fixture.detectChanges();
+    expect(status()).toBeNull();
+
+    tick(1000);
+    fixture.detectChanges();
+    expect(status()?.textContent).toContain('serveur de démonstration démarre');
+
+    response.next(SELLER);
+    response.complete();
+    fixture.detectChanges();
+    expect(status()).toBeNull();
+  }));
+
+  it('hides the demo account box when no demo account is configured', () => {
+    expect((fixture.nativeElement as HTMLElement).querySelector('.demo')).toBeNull();
   });
 });

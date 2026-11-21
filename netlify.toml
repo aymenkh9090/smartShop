@@ -1,0 +1,35 @@
+# Netlify : frontend Angular SmartShop (offre gratuite).
+# Variables a definir dans Netlify (Site configuration > Environment variables) :
+#   SMARTSHOP_API_URL  URL de l'API Render, ex. https://smartshop-api.onrender.com/api
+#   DEMO_USERNAME / DEMO_PASSWORD  compte de demonstration affiche sur la page de connexion (facultatif)
+[build]
+  base = "frontend"
+  command = "npm run build:netlify"
+  publish = "dist/frontend/browser"
+
+[build.environment]
+  # Angular 20 exige Node 20.19+
+  NODE_VERSION = "20"
+
+# Application monopage : toute URL inconnue renvoie index.html (routage Angular)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Fichiers fingerprintes (outputHashing: all) : cache long
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
