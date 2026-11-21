@@ -1,5 +1,5 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, inject, input, numberAttribute, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -17,6 +17,7 @@ import { catchError, debounceTime, finalize, of, switchMap, tap } from 'rxjs';
 import { PageRequest, emptyPage } from '../../../core/models/page';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { optionalNumberAttribute } from '../../../shared/utils/optional-number';
 import {
   AFTER_SALES_STATUSES,
   AFTER_SALES_STATUS_LABELS,
@@ -60,7 +61,7 @@ export class TicketList implements OnInit {
   private readonly auth = inject(AuthService);
 
   /** Tickets d'un client (?customerId=), ex. depuis la liste des clients. */
-  readonly customerId = input(undefined, { transform: numberAttribute });
+  readonly customerId = input(undefined, { transform: optionalNumberAttribute });
   /** Statut initial (?status=READY), ex. depuis le tableau de bord. */
   readonly status = input<AfterSalesStatus>();
 

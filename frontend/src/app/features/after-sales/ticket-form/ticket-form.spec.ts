@@ -57,7 +57,7 @@ describe('TicketForm', () => {
       deviceDescription: ' iPhone 12 ',
       imei: '490154203237518',
       reportedIssue: ' Ne charge plus ',
-      expectedDate: new Date(2026, 9, 5),
+      expectedDate: new Date(2099, 9, 5), // date future fixe : le formulaire refuse une date passee
     });
     component().submit();
 
@@ -69,7 +69,7 @@ describe('TicketForm', () => {
       serialNumber: null,
       reportedIssue: 'Ne charge plus',
       estimatedCost: null,
-      expectedDate: '2026-10-05',
+      expectedDate: '2099-10-05',
       notes: null,
     });
     expect(TestBed.inject(Router).navigate).toHaveBeenCalledWith(['/after-sales', 9]);

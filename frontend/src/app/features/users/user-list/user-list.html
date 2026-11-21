@@ -41,7 +41,7 @@
       <th mat-header-cell *matHeaderCellDef mat-sort-header="lastName">Utilisateur</th>
       <td mat-cell *matCellDef="let u">
         <div class="identity" [class.disabled]="!u.enabled">
-          <span class="avatar" aria-hidden="true">{{ initials(u) }}</span>
+          <span class="identity-avatar" aria-hidden="true">{{ initials(u) }}</span>
           <span class="identity-text">
             <span class="identity-name">
               {{ u.firstName }} {{ u.lastName }}
@@ -49,7 +49,7 @@
                 <span class="self-tag">Vous</span>
               }
             </span>
-            <span class="identity-login">&#64;{{ u.username }}</span>
+            <span class="identity-sub">&#64;{{ u.username }}</span>
           </span>
         </div>
       </td>

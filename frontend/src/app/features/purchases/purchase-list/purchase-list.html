@@ -1,5 +1,8 @@
 <div class="page-header">
-  <h2>Achats{{ supplierId() ? ' du fournisseur' : '' }}</h2>
+  <div class="page-title">
+    <h2>Achats{{ supplierId() ? ' du fournisseur' : '' }}</h2>
+    <p class="page-subtitle">Réceptions de marchandise auprès des fournisseurs</p>
+  </div>
   <a mat-flat-button routerLink="/purchases/new"><mat-icon>add_shopping_cart</mat-icon> Nouvel achat</a>
 </div>
 

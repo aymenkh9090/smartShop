@@ -1,5 +1,8 @@
 <div class="page-header">
-  <h2>Ventes{{ customerId() ? ' du client' : '' }}</h2>
+  <div class="page-title">
+    <h2>Ventes{{ customerId() ? ' du client' : '' }}</h2>
+    <p class="page-subtitle">Historique des ventes, règlements et restes à payer</p>
+  </div>
   <a mat-flat-button routerLink="/sales/new"><mat-icon>point_of_sale</mat-icon> Nouvelle vente</a>
 </div>
 

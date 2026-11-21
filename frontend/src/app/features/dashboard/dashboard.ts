@@ -7,6 +7,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { RouterLink } from '@angular/router';
 import { catchError, map, of, startWith } from 'rxjs';
 
+import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { AFTER_SALES_STATUS_LABELS, AfterSalesStatus } from '../after-sales/after-sales.models';
 import { Dashboard as DashboardData } from './dashboard.models';
@@ -31,6 +32,7 @@ type LoadState = { status: 'loading' } | { status: 'error' } | { status: 'ready'
 })
 export class Dashboard {
   private readonly notifications = inject(NotificationService);
+  private readonly auth = inject(AuthService);
 
   protected readonly openStatuses = OPEN_STATUSES;
   protected readonly statusLabels = AFTER_SALES_STATUS_LABELS;
@@ -52,6 +54,13 @@ export class Dashboard {
   protected readonly data = computed(() => {
     const state = this.state();
     return state.status === 'ready' ? state.data : null;
+  });
+
+  /** Accueil personnalise : "Bonjour" en journee, "Bonsoir" a partir de 18h. */
+  protected readonly greeting = computed(() => {
+    const salutation = new Date().getHours() >= 18 ? 'Bonsoir' : 'Bonjour';
+    const firstName = this.auth.currentUser()?.firstName;
+    return firstName ? `${salutation}, ${firstName}` : salutation;
   });
 
   /** Evolution du CA du mois par rapport a la meme periode du mois precedent (null si pas de base). */

@@ -35,7 +35,8 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => inject(ThemeService).apply()),
     { provide: LOCALE_ID, useValue: 'fr' },
     { provide: DEFAULT_CURRENCY_CODE, useValue: 'TND' },
-    { provide: MAT_FORM_FIELD_DEFAULT_OPTIONS, useValue: { appearance: 'outline' } },
+    // Libelle toujours flottant : styles.scss le place au-dessus du champ (style SaaS)
+    { provide: MAT_FORM_FIELD_DEFAULT_OPTIONS, useValue: { appearance: 'outline', floatLabel: 'always' } },
     { provide: MAT_ICON_DEFAULT_OPTIONS, useValue: { fontSet: 'material-symbols-outlined' } },
     { provide: MatPaginatorIntl, useClass: FrenchPaginatorIntl },
   ],

@@ -36,27 +36,49 @@ html {
   --mat-sys-title-small-tracking: 0;
 
   /* ---------- Jetons applicatifs ---------- */
-  --app-bg: light-dark(#f6f7fb, #0f1015);
+  --app-bg: light-dark(#fafafb, #0c0d11);
   --app-surface: light-dark(#ffffff, #181a21);
-  --app-surface-muted: light-dark(#f8f9fc, #1f222b);
-  --app-border: light-dark(#e6e8ef, #2b2f3a);
-  --app-border-strong: light-dark(#d5d8e2, #3a3f4d);
+  --app-surface-muted: light-dark(#f6f7f9, #1b1d24);
+  --app-border: light-dark(#ebecf0, #262931);
+  --app-border-strong: light-dark(#dcdee5, #343844);
   --app-text: light-dark(#111827, #eceef5);
   --app-text-muted: light-dark(#5b6275, #a3a9b8);
   --app-text-subtle: light-dark(#8a90a2, #7b8194);
-  --app-shadow: light-dark(0 1px 2px rgb(16 24 40 / 5%), 0 1px 2px rgb(0 0 0 / 40%));
+  --app-shadow: light-dark(0 1px 2px rgb(16 24 40 / 4%), 0 1px 2px rgb(0 0 0 / 40%));
+  --app-shadow-md: light-dark(
+    0 4px 12px -2px rgb(16 24 40 / 8%), 0 2px 4px -2px rgb(16 24 40 / 5%),
+    0 6px 16px -4px rgb(0 0 0 / 55%));
   --app-shadow-lg: light-dark(0 12px 32px -12px rgb(16 24 40 / 18%), 0 12px 32px -12px rgb(0 0 0 / 60%));
   --app-radius: 12px;
   --app-radius-sm: 8px;
   --app-accent: var(--mat-sys-primary);
   --app-accent-soft: light-dark(#eeedff, #262450);
+  /* Halo de fond discret et degrade de marque (logo, avatar, bouton principal) */
+  --app-glow: light-dark(rgb(99 102 241 / 9%), rgb(99 102 241 / 14%));
+  --app-glow-2: light-dark(rgb(168 85 247 / 6%), rgb(168 85 247 / 9%));
+  /* Texte blanc sur le degrade : contraste >= 5.7:1 sur toute sa longueur */
+  --app-brand-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  --app-brand-shadow: 0 8px 20px -8px rgb(79 70 229 / 65%);
+  /* Bouton principal : aplat de marque + reflet interne (texte blanc, contraste 6.3:1) */
+  --app-brand-solid: #4f46e5;
+  --app-brand-solid-hover: #4338ca;
+  --app-button-shadow: 0 1px 2px rgb(16 24 40 / 12%), inset 0 1px 0 rgb(255 255 255 / 16%);
+  --app-focus-ring: 0 0 0 3px light-dark(rgb(99 102 241 / 22%), rgb(129 140 248 / 30%));
+  --app-ease: cubic-bezier(0.2, 0, 0, 1);
 
-  /* Barre laterale : sombre dans les deux themes (contraste texte >= 4.5:1) */
-  --sidebar-bg: light-dark(#15172b, #101118);
-  --sidebar-text: #d4d6e4;
-  --sidebar-text-muted: #9095b0;
-  --sidebar-active-bg: rgb(129 140 248 / 18%);
-  --sidebar-active-accent: #a5b4fc;
+  /* Accents par indicateur (pastilles d'icones) */
+  --tone-violet-bg: light-dark(#f3e8ff, #2e1a47);
+  --tone-violet-fg: light-dark(#6d28d9, #d8b4fe);
+
+  /* Barre laterale : suit le theme, a peine teintee par rapport au contenu (contraste texte >= 4.5:1) */
+  --sidebar-bg: light-dark(#f4f4f6, #111217);
+  --sidebar-border: light-dark(#e7e8ec, #22242b);
+  --sidebar-text: light-dark(#3a3f4c, #c9ccd6);
+  --sidebar-text-muted: light-dark(#6b7080, #8b90a0);
+  --sidebar-text-strong: light-dark(#111827, #f3f4f7);
+  --sidebar-hover-bg: light-dark(rgb(16 24 40 / 5%), rgb(255 255 255 / 5%));
+  --sidebar-active-bg: light-dark(#ffffff, #1f2129);
+  --sidebar-active-accent: light-dark(#4f46e5, #a5b4fc);
 
   /* Statuts : fond doux + texte fonce (clair) / fond sombre + texte clair (sombre) */
   --status-success-bg: light-dark(#e7f7ee, #0f2e1f);
@@ -79,12 +101,13 @@ html {
   ));
   @include mat.table-overrides((
     background-color: transparent,
-    header-headline-color: var(--app-text-muted),
-    header-headline-weight: 600,
-    header-headline-size: 13px,
-    header-headline-tracking: 0,
-    header-container-height: 48px,
-    row-item-container-height: 56px,
+    header-headline-color: var(--app-text-subtle),
+    header-headline-weight: 500,
+    header-headline-size: 12px,
+    header-headline-tracking: 0.01em,
+    header-container-height: 40px,
+    row-item-container-height: 52px,
+    row-item-label-text-size: 14px,
     row-item-outline-color: var(--app-border),
     row-item-label-text-color: var(--app-text),
     row-item-label-text-tracking: 0,
@@ -94,21 +117,59 @@ html {
     container-background-color: transparent,
   ));
   @include mat.button-overrides((
-    filled-container-shape: 10px,
-    outlined-container-shape: 10px,
-    protected-container-shape: 10px,
-    text-container-shape: 10px,
+    filled-container-shape: 8px,
+    outlined-container-shape: 8px,
+    protected-container-shape: 8px,
+    text-container-shape: 8px,
+    tonal-container-shape: 8px,
+    filled-container-height: 36px,
+    outlined-container-height: 36px,
+    text-container-height: 36px,
+    tonal-container-height: 36px,
+    filled-horizontal-padding: 14px,
+    outlined-horizontal-padding: 14px,
+    filled-label-text-weight: 600,
+    filled-label-text-color: #fff,
+    filled-container-color: var(--app-brand-solid),
+    outlined-label-text-weight: 600,
+    text-label-text-weight: 600,
+    tonal-label-text-weight: 600,
     outlined-outline-color: var(--app-border-strong),
   ));
+  /* Champs compacts (44px) et texte 14px : formulaires et filtres moins massifs */
   @include mat.form-field-overrides((
-    outlined-container-shape: 10px,
+    outlined-container-shape: 8px,
     outlined-outline-color: var(--app-border-strong),
+    outlined-hover-outline-color: var(--app-text-subtle),
+    container-height: 44px,
+    container-vertical-padding: 10px,
+    container-text-size: 14px,
+    outlined-label-text-size: 14px,
+  ));
+  @include mat.select-overrides((
+    trigger-text-size: 14px,
+    panel-background-color: var(--app-surface),
+  ));
+  @include mat.autocomplete-overrides((
+    background-color: var(--app-surface),
   ));
   @include mat.dialog-overrides((
-    container-shape: 16px,
+    container-shape: 18px,
+    container-color: var(--app-surface),
   ));
   @include mat.menu-overrides((
     container-shape: 12px,
+    container-color: var(--app-surface),
+  ));
+  @include mat.snack-bar-overrides((
+    container-shape: 12px,
+  ));
+  @include mat.tooltip-overrides((
+    container-shape: 8px,
+  ));
+  @include mat.expansion-overrides((
+    container-shape: 12px,
+    container-background-color: var(--app-surface-muted),
   ));
   @include mat.list-overrides((
     active-indicator-shape: 10px,
@@ -127,10 +188,15 @@ body {
   color: var(--app-text);
   font: var(--mat-sys-body-medium);
   -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'cv11', 'ss01';
 }
 
 a {
   color: var(--mat-sys-primary);
+}
+
+::selection {
+  background: var(--app-accent-soft);
 }
 
 /* Chiffres alignes pour les montants (pas sur tout le tableau : les codes produit resteraient espaces) */
@@ -148,6 +214,115 @@ a {
   font: var(--mat-sys-body-small);
 }
 
+/* ---------- Animations ---------- */
+
+/* Apparition douce de chaque page (fill-mode backwards : aucun transform ne reste applique ensuite) */
+@keyframes app-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.app-content > :not(router-outlet) {
+  animation: app-page-in 260ms var(--app-ease) backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}
+
+/* ---------- Champs : libelle au-dessus du cadre ---------- */
+
+/*
+ * Le libelle Material (toujours flottant, voir app.config.ts) est sorti du cadre : place au-dessus,
+ * taille normale, et le cadre est referme (plus d'encoche). Les champs sans libelle ne bougent pas.
+ */
+.mat-mdc-form-field.mat-form-field-appearance-outline:has(.mdc-floating-label) {
+  padding-top: 22px;
+
+  .mdc-notched-outline__notch {
+    overflow: visible;
+    clip-path: none;
+  }
+
+  .mdc-notched-outline--notched .mdc-notched-outline__notch {
+    border-top-style: solid;
+    border-top-width: var(--mat-form-field-outlined-outline-width, 1px);
+  }
+
+  &.mat-focused .mdc-notched-outline--notched .mdc-notched-outline__notch {
+    border-top-width: var(--mat-form-field-outlined-focus-outline-width, 2px);
+  }
+
+  .mdc-text-field--outlined .mdc-floating-label--float-above {
+    --mat-mdc-form-field-label-offset-x: 0px;
+    top: 0;
+    left: 0;
+    color: var(--app-text);
+    font: var(--mat-sys-label-large);
+    font-weight: 500;
+    overflow: visible;
+    max-width: none;
+    transform: translate(-12px, -32px) !important;
+  }
+
+  &.mat-form-field-invalid .mdc-floating-label--float-above {
+    color: var(--mat-sys-error);
+  }
+
+  .mdc-floating-label--required::after {
+    color: var(--mat-sys-error);
+  }
+}
+
+/* ---------- Boutons ---------- */
+
+/* Bouton principal : aplat de marque, reflet interne, ombre courte */
+.mat-mdc-unelevated-button:not(:disabled) {
+  box-shadow: var(--app-button-shadow);
+  transition: background-color 160ms var(--app-ease), transform 160ms var(--app-ease);
+
+  &:hover {
+    --mat-button-filled-container-color: var(--app-brand-solid-hover);
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+}
+
+.mat-mdc-outlined-button:not(:disabled) {
+  background: var(--app-surface);
+  box-shadow: 0 1px 2px rgb(16 24 40 / 5%);
+}
+
+.mat-mdc-button .mat-icon,
+.mat-mdc-unelevated-button .mat-icon,
+.mat-mdc-outlined-button .mat-icon {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+}
+
+/* Pastille d'icone : titres de carte, fil d'Ariane */
+mat-icon.icon-chip {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--app-accent-soft);
+  color: var(--mat-sys-primary);
+  font-size: 18px;
+}
+
 /* ---------- Mise en page partagee des pages ---------- */
 
 .page-header {
@@ -156,7 +331,7 @@ a {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem 1rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
 
   h2 {
     display: flex;
@@ -165,16 +340,16 @@ a {
     gap: 0.5rem;
     margin: 0;
     font: var(--mat-sys-headline-small);
-    font-size: 26px;
-    font-weight: 700;
-    letter-spacing: -0.02em;
+    font-size: 24px;
+    font-weight: 650;
+    letter-spacing: -0.022em;
   }
 
   /* Titre + sous-titre (et lien retour) empiles */
   > .page-title {
     flex-direction: column;
     flex-wrap: nowrap;
-    gap: 0.25rem;
+    gap: 0.3rem;
   }
 
   > div,
@@ -200,37 +375,82 @@ a {
   color: var(--app-text-muted);
   font: var(--mat-sys-label-large);
   text-decoration: none;
+  transition: color 120ms ease;
 
   mat-icon {
     width: 18px;
     height: 18px;
     font-size: 18px;
+    transition: transform 160ms var(--app-ease);
   }
 
   &:hover {
     color: var(--mat-sys-primary);
+
+    mat-icon {
+      transform: translateX(-2px);
+    }
   }
 }
 
+/*
+ * Filtres : barre compacte. Suivie d'un tableau, elle forme avec lui une seule carte
+ * (barre d'outils en haut, tableau dessous).
+ */
 .filters {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 0 1rem;
-  padding: 1rem 1rem 0;
+  align-items: flex-end;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
   margin-bottom: 1rem;
   background: var(--app-surface);
   border: 1px solid var(--app-border);
   border-radius: var(--app-radius);
   box-shadow: var(--app-shadow);
+  box-sizing: border-box;
+
+  mat-form-field {
+    flex: 1 1 180px;
+    min-width: 0;
+  }
 
   .search {
-    flex: 1 1 280px;
+    flex: 2 1 280px;
   }
 
-  mat-checkbox {
-    margin-bottom: 1rem;
+  /* Case a cocher alignee sur le cadre des champs (libelles au-dessus) */
+  > mat-checkbox {
+    margin-bottom: 2px;
   }
+
+  /* Pas de zone de message sous les filtres, sauf en cas d'erreur */
+  .mat-mdc-form-field:not(.mat-form-field-invalid) .mat-mdc-form-field-subscript-wrapper {
+    display: none;
+  }
+}
+
+.filters:has(+ .table-container),
+.filters:has(+ mat-progress-bar + .table-container) {
+  margin-bottom: 0;
+  border-bottom-color: var(--app-border);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  box-shadow: none;
+}
+
+.filters + .table-container,
+.filters + mat-progress-bar + .table-container {
+  border-top: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+/* Barre de chargement posee sur le bord du tableau : pas de decalage de la mise en page */
+mat-progress-bar:has(+ .table-container) {
+  position: relative;
+  z-index: 1;
+  margin-bottom: -4px;
 }
 
 .table-container {
@@ -259,24 +479,132 @@ a {
     padding-right: 1rem;
   }
 
+  td.mat-mdc-cell {
+    transition: background-color 120ms ease;
+  }
+
   tr.mat-mdc-row:hover td {
     background: var(--app-surface-muted);
   }
 
+  tr.mat-mdc-row:last-child td {
+    border-bottom-color: transparent;
+  }
+
   .mat-mdc-paginator {
     border-top: 1px solid var(--app-border);
+    color: var(--app-text-muted);
   }
 }
 
+/* Identite dans une cellule de tableau : avatar a initiales + nom (+ ligne secondaire) */
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.35rem 0;
+
+  &.disabled {
+    opacity: 0.6;
+  }
+}
+
+.identity-avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--app-accent-soft);
+  color: var(--mat-sys-primary);
+  font: var(--mat-sys-label-medium);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 12%, transparent);
+
+  /* Organisation (fournisseur) : avatar carre */
+  &.square {
+    border-radius: 8px;
+  }
+}
+
+.identity-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.identity-name {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.identity-sub {
+  color: var(--app-text-muted);
+  font: var(--mat-sys-body-small);
+}
+
+/* Etat vide : icone + message centres (l'icone est decorative, le texte porte le sens) */
 .no-data {
-  padding: 2rem 1.5rem;
+  padding: 2.5rem 1.5rem;
   text-align: center;
   color: var(--app-text-muted);
+
+  &::before {
+    content: 'inbox';
+    display: block;
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 0.75rem;
+    border-radius: 14px;
+    background: var(--app-surface-muted);
+    color: var(--app-text-subtle);
+    font-family: 'Material Symbols Outlined';
+    font-size: 26px;
+    font-feature-settings: 'liga';
+    line-height: 48px;
+    text-align: center;
+  }
+}
+
+/* Ligne "aucun resultat" de mat-table (mat-mdc-cell impose text-align: left) */
+td.no-data.mat-mdc-cell {
+  text-align: center;
+}
+
+/* Etat vide compact (paiements, pieces) dans une carte */
+p.no-data {
+  margin: 0;
+  padding: 1.5rem 1rem;
 }
 
 .actions-cell {
   white-space: nowrap;
   text-align: right;
+
+  .mat-mdc-icon-button {
+    --mat-icon-button-state-layer-size: 32px;
+    width: 32px;
+    height: 32px;
+    padding: 4px;
+    border-radius: 8px;
+    --mat-icon-button-container-shape: 8px;
+    color: var(--app-text-subtle);
+    transition: color 120ms ease;
+
+    .mat-icon {
+      width: 20px;
+      height: 20px;
+      font-size: 20px;
+    }
+
+    &:hover:not(:disabled) {
+      color: var(--mat-sys-primary);
+    }
+  }
 }
 
 /*
@@ -286,15 +614,16 @@ a {
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.15rem 0.6rem;
-  border-radius: 999px;
+  gap: 0.375rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 6px;
   font: var(--mat-sys-label-medium);
-  font-weight: 500;
+  font-weight: 600;
   white-space: nowrap;
   vertical-align: middle;
   background: var(--status-info-bg);
   color: var(--status-info-fg);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 14%, transparent);
 
   &::before {
     content: '';
@@ -338,7 +667,7 @@ a {
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
-  gap: 0 1rem;
+  gap: 0.25rem 1rem;
 
   .full-width {
     grid-column: 1 / -1;
@@ -395,14 +724,16 @@ a {
   border-collapse: collapse;
 
   th {
-    color: var(--app-text-muted);
-    font: var(--mat-sys-label-large);
-    font-weight: 600;
+    color: var(--app-text-subtle);
+    font: var(--mat-sys-label-small);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
   }
 
   th,
   td {
-    padding: 0.6rem 0.5rem;
+    padding: 0.65rem 0.5rem;
     text-align: left;
     border-bottom: 1px solid var(--app-border);
   }
@@ -436,11 +767,18 @@ a {
 /* Liens dans les tableaux : references compactes, soulignees seulement au survol */
 .table-container a:not(.mat-mdc-icon-button),
 .detail-table a {
-  font-weight: 500;
+  font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
 
   &:hover {
     text-decoration: underline;
+    text-underline-offset: 3px;
   }
+}
+
+/* Focus clavier visible et coherent sur les elements interactifs maison */
+:where(a, button, [tabindex]):focus-visible {
+  outline: 2px solid var(--mat-sys-primary);
+  outline-offset: 2px;
 }

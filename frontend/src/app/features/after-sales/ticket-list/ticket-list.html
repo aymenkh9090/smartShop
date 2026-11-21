@@ -1,5 +1,8 @@
 <div class="page-header">
-  <h2>Service après-vente{{ customerId() ? ' (client)' : '' }}</h2>
+  <div class="page-title">
+    <h2>Service après-vente{{ customerId() ? ' (client)' : '' }}</h2>
+    <p class="page-subtitle">Appareils confiés, diagnostics, réparations et livraisons</p>
+  </div>
   @if (canCreate) {
     <a mat-flat-button routerLink="/after-sales/new"><mat-icon>add</mat-icon> Nouveau ticket</a>
   }

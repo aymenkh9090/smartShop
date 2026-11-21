@@ -1,5 +1,8 @@
 <div class="page-header">
-  <h2>Clients</h2>
+  <div class="page-title">
+    <h2>Clients</h2>
+    <p class="page-subtitle">Coordonnées, historique d'achats et soldes</p>
+  </div>
   @if (canEdit()) {
     <a mat-flat-button routerLink="new"><mat-icon>add</mat-icon> Nouveau client</a>
   }
@@ -29,7 +32,17 @@
          (matSortChange)="onSort($event)">
     <ng-container matColumnDef="name">
       <th mat-header-cell *matHeaderCellDef mat-sort-header="lastName">Nom</th>
-      <td mat-cell *matCellDef="let c">{{ c.lastName }} {{ c.firstName }}</td>
+      <td mat-cell *matCellDef="let c">
+        <div class="identity">
+          <span class="identity-avatar" aria-hidden="true">{{ c.lastName + ' ' + c.firstName | initials }}</span>
+          <span class="identity-text">
+            <span class="identity-name">{{ c.lastName }} {{ c.firstName }}</span>
+            @if (c.email) {
+              <span class="identity-sub">{{ c.email }}</span>
+            }
+          </span>
+        </div>
+      </td>
     </ng-container>
     <ng-container matColumnDef="phone">
       <th mat-header-cell *matHeaderCellDef mat-sort-header>Téléphone</th>

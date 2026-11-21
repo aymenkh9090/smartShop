@@ -19,6 +19,7 @@ import { PageRequest, emptyPage } from '../../../core/models/page';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { confirmAction } from '../../../shared/components/confirm-dialog/confirm-dialog';
+import { InitialsPipe } from '../../../shared/pipes/initials.pipe';
 import { Supplier, SupplierFilter } from '../supplier.models';
 import { SupplierService } from '../supplier.service';
 
@@ -31,6 +32,7 @@ interface SupplierQuery extends PageRequest {
 @Component({
   selector: 'app-supplier-list',
   imports: [
+    InitialsPipe,
     ReactiveFormsModule,
     RouterLink,
     MatTableModule,

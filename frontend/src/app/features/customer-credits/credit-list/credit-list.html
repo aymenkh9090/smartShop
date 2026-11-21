@@ -1,5 +1,8 @@
 <div class="page-header">
-  <h2>Crédits clients{{ customerId() ? ' (client)' : '' }}</h2>
+  <div class="page-title">
+    <h2>Crédits clients{{ customerId() ? ' (client)' : '' }}</h2>
+    <p class="page-subtitle">Ventes à crédit, échéances et paiements reçus</p>
+  </div>
   <div>
     <a mat-stroked-button routerLink="/customer-credits/balances"><mat-icon>account_balance_wallet</mat-icon> Soldes par client</a>
     <a mat-flat-button routerLink="/customer-credits/new"><mat-icon>add</mat-icon> Nouveau crédit</a>

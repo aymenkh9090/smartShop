@@ -15,17 +15,21 @@ description: Regles pour coder dans frontend/ (Angular 20 standalone) - pages, c
 - Composants standalone, `ChangeDetectionStrategy.OnPush`, `inject()` plutot que l'injection par constructeur.
 - Etat local : signals (`signal`, `computed`) ; flux HTTP : RxJS / `toSignal`.
 - Formulaires : Reactive Forms types (`FormBuilder.nonNullable`), validations alignees sur le backend.
-- URL de l'API : uniquement via `environment.apiUrl`. Jamais d'URL en dur.
+- URL de l'API : uniquement via `environment.apiUrl`. Jamais d'URL en dur. En production, `apiUrl` et le compte de demo viennent de `ng build --define` (script `build:netlify`, variables Netlify) ; jamais de valeur de deploiement dans le code.
 - Erreurs HTTP : typer avec `ApiError` (`core/models/api-error.ts`).
 - Template : control flow natif (`@if`, `@for` avec `track`).
 - Les guards ne sont qu'un confort UX : l'autorisation reelle est cote backend.
 - Montants affiches avec le pipe `currency` / `number`, jamais d'arrondi manuel (locale `fr`, devise `TND` : `currency: 'TND' : 'symbol' : '1.3-3'`).
 - UI : Angular Material 20 (pas de `@angular/animations`, ne pas importer `NoopAnimationsModule`). Classes globales dans `styles.scss` : `page-header` (+ `page-title` / `page-subtitle` / `back-link`), `filters`, `table-container`, `form-card`, `form-section` (titre + aide a gauche, champs a droite), `form-grid`, `form-actions`, `badge`, `detail-table`.
+- Look moderne (refonte UI) : en-tete de liste = `page-title` (h2 + `page-subtitle`) ; `filters` suivi d'un `table-container` forment une seule carte (CSS) ; `.no-data` affiche automatiquement une icone (surcharger `::before { content: '<icone>' }` si besoin) ; pastille d'icone de titre = `<mat-icon class="icon-chip">` ; bouton plein = aplat `--app-brand-solid` (jeton Material `filled-container-color`, texte blanc), pas de bouton plein pour une action secondaire ; le degrade `--app-brand-gradient` est reserve au logo / avatars / page de connexion.
+- Parametre de route numerique facultatif (`?customerId=`) : `input(undefined, { transform: optionalNumberAttribute })` (`shared/utils/optional-number.ts`). Jamais `numberAttribute` seul : il renvoie NaN, envoye tel quel a l'API (400).
 - **Textes affiches en francais correctement accentue** (libelles, messages, tooltips, `aria-label`). Le code et les commentaires restent en ASCII.
-- Barre laterale sombre dans les deux themes : jetons `--sidebar-*` (`styles.scss`).
+- Style SaaS sobre (type Linear / Stripe) : fond plat `--app-bg`, barre laterale claire qui suit le theme (jetons `--sidebar-*`, `styles.scss`), elements de menu compacts, en-tete 56px, pas de halo ni de degrade decoratif sur les surfaces.
 - Libelles / descriptions des roles : `ROLE_LABELS`, `ROLE_DESCRIPTIONS` (`core/models/auth.models.ts`), ne pas les dupliquer.
 - Design system (`styles.scss`) : theme M3 indigo (`_theme-colors.scss`, genere par `ng g @angular/material:theme-color`), police Inter, icones Material Symbols (`MAT_ICON_DEFAULT_OPTIONS`, classe `filled` pour l'icone pleine).
 - Mode clair / sombre : `ThemeService` (clair / sombre / systeme, memorise) pilote `color-scheme` sur `<html>`. **Jamais de couleur en dur dans un composant** : utiliser les jetons `--app-*` (surface, border, text-muted...) et `--status-*` (success / warning / danger / info / neutral), definis avec `light-dark()`. Un canvas (Chart.js) lit `ThemeService.isDark()`.
+- Champs : libelle toujours au-dessus du cadre (`floatLabel: 'always'` dans `app.config.ts` + CSS `styles.scss`). Un `placeholder` sert d'exemple de saisie, jamais de libelle.
+- Personne / organisation dans un tableau : `.identity` > `.identity-avatar` (`square` pour une organisation, initiales via le pipe `initials` de `shared/pipes`) + `.identity-text` (`.identity-name`, `.identity-sub`).
 - Pastilles : `badge` + `success` (actif, paye, pret), `warn` (a regler), `danger` (en retard, stock faible), `muted` (clos, inactif) ; sans modificateur = info. Le libelle porte toujours le sens.
 - Coquille : menu groupe dans `app.ts` (`NAV_GROUPS`, filtre par role, groupes vides masques), menu escamotable sous 960px. Ajouter une page = l'ajouter dans un groupe.
 

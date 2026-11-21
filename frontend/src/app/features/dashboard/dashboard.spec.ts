@@ -1,7 +1,9 @@
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
 
+import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { Dashboard } from './dashboard';
 import { Dashboard as DashboardData } from './dashboard.models';
@@ -47,6 +49,7 @@ describe('Dashboard', () => {
         provideRouter([]),
         { provide: DashboardService, useValue: { get: () => response } },
         { provide: NotificationService, useValue: jasmine.createSpyObj('NotificationService', ['success', 'error']) },
+        { provide: AuthService, useValue: { currentUser: signal({ firstName: 'Amine' }) } },
       ],
     });
     const fixture: ComponentFixture<Dashboard> = TestBed.createComponent(Dashboard);

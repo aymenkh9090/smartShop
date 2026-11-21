@@ -19,6 +19,7 @@ import { PageRequest, emptyPage } from '../../../core/models/page';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { confirmAction } from '../../../shared/components/confirm-dialog/confirm-dialog';
+import { InitialsPipe } from '../../../shared/pipes/initials.pipe';
 import { Customer, CustomerFilter } from '../customer.models';
 import { CustomerService } from '../customer.service';
 
@@ -31,6 +32,7 @@ interface CustomerQuery extends PageRequest {
 @Component({
   selector: 'app-customer-list',
   imports: [
+    InitialsPipe,
     ReactiveFormsModule,
     RouterLink,
     MatTableModule,

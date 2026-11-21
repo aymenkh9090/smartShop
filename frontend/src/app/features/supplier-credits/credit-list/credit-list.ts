@@ -1,5 +1,5 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, inject, input, numberAttribute, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -19,6 +19,7 @@ import { PageRequest, emptyPage } from '../../../core/models/page';
 import { CREDIT_STATUSES, CREDIT_STATUS_LABELS, CreditStatus, PaymentRequest } from '../../../core/models/payment';
 import { NotificationService } from '../../../core/services/notification.service';
 import { askPayment } from '../../../shared/components/payment-dialog/payment-dialog';
+import { optionalNumberAttribute } from '../../../shared/utils/optional-number';
 import { SupplierCreditFilter, SupplierCreditSummary, supplierCreditLink } from '../supplier-credit.models';
 import { SupplierCreditService } from '../supplier-credit.service';
 
@@ -55,7 +56,7 @@ export class CreditList implements OnInit {
   private readonly dialog = inject(MatDialog);
 
   /** Credits d'un fournisseur (?supplierId=), ex. depuis la liste des soldes. */
-  readonly supplierId = input(undefined, { transform: numberAttribute });
+  readonly supplierId = input(undefined, { transform: optionalNumberAttribute });
 
   /** Un achat n'est jamais annule : pas de filtre CANCELLED. */
   protected readonly statuses = CREDIT_STATUSES.filter((status) => status !== 'CANCELLED');

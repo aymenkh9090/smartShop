@@ -1,5 +1,8 @@
 <div class="page-header">
-  <h2>Crédits fournisseurs{{ supplierId() ? ' (fournisseur)' : '' }}</h2>
+  <div class="page-title">
+    <h2>Crédits fournisseurs{{ supplierId() ? ' (fournisseur)' : '' }}</h2>
+    <p class="page-subtitle">Achats à crédit, échéances et règlements</p>
+  </div>
   <div>
     <a mat-stroked-button routerLink="/supplier-credits/balances"><mat-icon>account_balance_wallet</mat-icon> Soldes par fournisseur</a>
     <a mat-flat-button routerLink="/supplier-credits/new"><mat-icon>add</mat-icon> Nouveau crédit</a>

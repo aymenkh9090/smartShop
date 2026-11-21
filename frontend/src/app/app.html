@@ -48,6 +48,7 @@
         }
         @if (currentSection(); as section) {
           <div class="section">
+            <mat-icon class="section-icon" aria-hidden="true">{{ section.icon }}</mat-icon>
             @if (section.group) {
               <span class="section-group">{{ section.group }}</span>
               <mat-icon class="section-sep" aria-hidden="true">chevron_right</mat-icon>
@@ -74,7 +75,7 @@
         </mat-menu>
 
         <button class="avatar-button" type="button" [matMenuTriggerFor]="userMenu" aria-label="Menu utilisateur">
-          <span class="avatar small" aria-hidden="true">{{ initials() }}</span>
+          <span class="avatar small toolbar-avatar" aria-hidden="true">{{ initials() }}</span>
           <span class="toolbar-user">{{ user.firstName }} {{ user.lastName }}</span>
           <mat-icon>expand_more</mat-icon>
         </button>

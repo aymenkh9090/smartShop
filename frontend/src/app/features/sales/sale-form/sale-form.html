@@ -4,6 +4,12 @@
 
 <form class="sale-layout" [formGroup]="form" (ngSubmit)="submit()" novalidate>
   <section class="form-card lines">
+    <header class="card-head">
+      <h3><mat-icon class="icon-chip" aria-hidden="true">shopping_bag</mat-icon> Articles</h3>
+      @if (form.controls.lines.length; as count) {
+        <span class="badge muted">{{ count }} ligne(s)</span>
+      }
+    </header>
     <app-product-picker label="Ajouter un produit (nom, SKU, code-barres)" (selected)="addProduct($event)" />
 
     @if (form.controls.lines.length) {
@@ -61,7 +67,7 @@
   </section>
 
   <aside class="form-card summary">
-    <h3>Client</h3>
+    <h3><mat-icon class="icon-chip" aria-hidden="true">person</mat-icon> Client</h3>
     @if (customer(); as c) {
       <div class="selected-customer">
         <span>{{ c.lastName }} {{ c.firstName }} - {{ c.phone }}</span>
@@ -73,7 +79,7 @@
       <app-customer-picker label="Client (obligatoire pour un crédit)" (selected)="selectCustomer($event)" />
     }
 
-    <h3>Montants</h3>
+    <h3><mat-icon class="icon-chip" aria-hidden="true">receipt_long</mat-icon> Montants</h3>
     <dl class="totals">
       <dt>Sous-total</dt>
       <dd>{{ subtotal() | currency: 'TND' : 'symbol' : '1.3-3' }}</dd>
@@ -83,7 +89,7 @@
       <input matInput type="number" min="0" step="0.001" formControlName="discount" />
       <mat-error>{{ errorOf(form.controls.discount) }}</mat-error>
     </mat-form-field>
-    <dl class="totals">
+    <dl class="totals grand">
       <dt>Total</dt>
       <dd class="grand-total">{{ total() | currency: 'TND' : 'symbol' : '1.3-3' }}</dd>
       <dt>Payé</dt>
@@ -92,7 +98,7 @@
       <dd [class.due]="remaining() > 0">{{ remaining() | currency: 'TND' : 'symbol' : '1.3-3' }}</dd>
     </dl>
 
-    <h3>Paiements</h3>
+    <h3><mat-icon class="icon-chip" aria-hidden="true">payments</mat-icon> Paiements</h3>
     <app-payments-editor [payments]="form.controls.payments" [remaining]="remaining()" />
 
     @if (remaining() > 0) {
@@ -114,7 +120,9 @@
     }
     <div class="form-actions">
       <a mat-button routerLink="/sales">Annuler</a>
-      <button mat-flat-button type="submit" [disabled]="submitting() || !!blockingError()">Valider la vente</button>
+      <button mat-flat-button type="submit" class="submit" [disabled]="submitting() || !!blockingError()">
+        <mat-icon>check_circle</mat-icon> Valider la vente
+      </button>
     </div>
   </aside>
 </form>

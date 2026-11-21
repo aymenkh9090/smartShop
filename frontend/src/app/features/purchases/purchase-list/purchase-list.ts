@@ -1,5 +1,5 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, inject, input, numberAttribute, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -18,6 +18,7 @@ import { catchError, debounceTime, finalize, of, switchMap, tap } from 'rxjs';
 import { PageRequest, emptyPage } from '../../../core/models/page';
 import { PAYMENT_STATUSES, PAYMENT_STATUS_LABELS, PaymentStatus } from '../../../core/models/payment';
 import { NotificationService } from '../../../core/services/notification.service';
+import { optionalNumberAttribute } from '../../../shared/utils/optional-number';
 import { PurchaseFilter, PurchaseSummary } from '../purchase.models';
 import { PurchaseService } from '../purchase.service';
 
@@ -51,7 +52,7 @@ export class PurchaseList implements OnInit {
   private readonly notifications = inject(NotificationService);
 
   /** Historique d'un fournisseur (?supplierId=), ex. depuis la liste des fournisseurs. */
-  readonly supplierId = input(undefined, { transform: numberAttribute });
+  readonly supplierId = input(undefined, { transform: optionalNumberAttribute });
 
   protected readonly paymentStatuses = PAYMENT_STATUSES;
   protected readonly paymentStatusLabels = PAYMENT_STATUS_LABELS;
