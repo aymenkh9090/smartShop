@@ -27,7 +27,7 @@ Le dépôt doit être sur GitHub (ou GitLab) : Render et Netlify déploient depu
 
 ## 1. Base de données — Neon
 
-1. Créer un compte sur <https://neon.com>, puis un projet `smartshop` (région : Europe, ex. Frankfurt).
+1. Créer un compte sur <https://neon.com>, puis un projet `smartshop` (Postgres 17, région **AWS Europe (Frankfurt)** : la même que le service Render, fixée dans `render.yaml`).
 2. **Connect** → décocher **Connection pooling** (hôte « direct », sans `-pooler` : Flyway en a besoin).
 3. Noter : hôte (`ep-xxx.eu-central-1.aws.neon.tech`), base (`neondb`), utilisateur, mot de passe.
 

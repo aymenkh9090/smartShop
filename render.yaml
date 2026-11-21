@@ -5,6 +5,8 @@ services:
     name: smartshop-api
     runtime: docker
     plan: free
+    # Meme region que la base Neon (AWS eu-central-1, Francfort) : requetes SQL sans traversee de l'Atlantique
+    region: frankfurt
     rootDir: backend
     dockerfilePath: ./Dockerfile
     autoDeploy: true
